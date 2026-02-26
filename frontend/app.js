@@ -3,7 +3,7 @@ const tg = window.Telegram?.WebApp;
 const statusEl = document.getElementById("status");
 const dataEl = document.getElementById("data");
 
-const API = "https://mellstroinost.onrender.com/";
+const API = "https://mellstroinost.onrender.com";
 
 function setStatus(text) {
   statusEl.textContent = text;
