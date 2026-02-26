@@ -3,6 +3,7 @@ const crypto = require("crypto");
 function verifyTelegramInitData(initData, botToken) {
   const params = new URLSearchParams(initData);
   const hash = params.get("hash");
+  botToken = (botToken || "").trim();
   if (!hash) return { ok: false, error: "no hash" };
 
   params.delete("hash");
