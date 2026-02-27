@@ -3,6 +3,8 @@ const tg = window.Telegram?.WebApp;
 const API = "https://mellstroinost.onrender.com";
 
 const statusEl = document.getElementById("status");
+const petImgEl = document.getElementById("petImg");
+const visualLabelEl = document.getElementById("visualLabel");
 const petNameEl = document.getElementById("petName");
 const stateTextEl = document.getElementById("stateText");
 
@@ -55,18 +57,48 @@ function setBusy(v) {
   });
 }
 
+// Функция для обновления картинки питомца в зависимости от его состояния
+function renderPetImage(me) {
+  if (!petImgEl) return;
+
+  // Карты для состояний (bad, mid, good)
+  const srcMap = {
+    bad: "./assets/pet_bad.jpg",   // Картинка для плохого состояния
+    mid: "./assets/pet_mid.jpg",   // Картинка для среднего состояния
+    good: "./assets/pet_good.jpg", // Картинка для хорошего состояния
+  };
+
+  const labelMap = {
+    bad: "😵 Плохое",   // Плохое состояние
+    mid: "😐 Среднее",  // Среднее состояние
+    good: "😄 Хорошее", // Хорошее состояние
+  };
+
+  // Получаем состояние питомца (по умолчанию "mid")
+  const vs = me.visualState || "mid"; 
+
+  // Устанавливаем изображение питомца
+  petImgEl.src = srcMap[vs] || srcMap.mid;
+
+  // Обновляем текстовое описание состояния питомца
+  if (visualLabelEl) {
+    visualLabelEl.textContent = `Состояние: ${labelMap[vs] || "—"}`;
+  }
+}
+
 function clamp100(x) {
   const n = Number(x);
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.min(100, n));
 }
 
+// Функция для обновления состояния "баров"
 function setBar(el, value) {
   if (!el) return;
   const v = clamp100(value);
   el.style.width = v + "%";
 
-  // простая индикация цвета
+  // Цветовая индикация в зависимости от значения
   if (v < 30) el.style.background = "#ef4444";
   else if (v < 60) el.style.background = "#f59e0b";
   else el.style.background = "#22c55e";
@@ -80,6 +112,7 @@ function safeJson(obj) {
   }
 }
 
+// Функция для отправки JSON на сервер
 async function postJson(url, body, token) {
   const r = await fetch(url, {
     method: "POST",
@@ -95,6 +128,7 @@ async function postJson(url, body, token) {
   return j;
 }
 
+// Функция для получения JSON с сервера
 async function getJson(url, token) {
   const r = await fetch(url, {
     headers: {
@@ -107,10 +141,16 @@ async function getJson(url, token) {
   return j;
 }
 
+// Функция для загрузки информации о пользователе и питомце
 async function loadMe() {
-  return await getJson(`${API}/me`, token);
+  const me = await getJson(`${API}/me`, token);  // Получаем актуальные данные с сервера
+  setStatus(`Привет, ${me.user.first_name}!`);
+  renderPetImage(me);  // Вызываем рендер питомца
+  render(me);  // Вызываем рендер стата
+  return me;  // Возвращаем данные
 }
 
+// Рендерим доступные комнаты
 function renderRooms() {
   if (!roomTabsEl) return;
 
@@ -132,6 +172,7 @@ function renderRooms() {
   });
 }
 
+// Рендерим доступные действия в зависимости от выбранной комнаты
 function renderActions() {
   if (!actionsEl) return;
 
@@ -153,6 +194,7 @@ function renderActions() {
   });
 }
 
+// Текст для состояния эмоции питомца
 function moodText(moodState) {
   switch (moodState) {
     case "sleeping": return "😴 Спит";
@@ -166,6 +208,7 @@ function moodText(moodState) {
   }
 }
 
+// Функция для рендеринга информации о пользователе и питомце
 function renderMe(me) {
   const { user, pet, moodState } = me;
 
@@ -174,7 +217,7 @@ function renderMe(me) {
     petNameEl.textContent = `Игрок: ${user?.first_name || "-"} (${uname})`;
   }
 
-  // уровни / xp / coins
+  // Уровень / XP / Монеты
   if (levelInfoEl) {
     const lvl = user?.level ?? 1;
     const xp = user?.xp ?? 0;
@@ -183,35 +226,36 @@ function renderMe(me) {
     levelInfoEl.textContent = `Уровень: ${lvl} | XP: ${xp}/${threshold} | Монеты: ${coins}`;
   }
 
-  // бары
+  // Обновляем бары для голода, настроения, энергии и чистоты
   setBar(hungerBar, pet?.hunger);
   setBar(moodBar, pet?.mood);
   setBar(energyBar, pet?.energy);
   setBar(cleanBar, pet?.cleanliness);
 
-  // состояние
+  // Статус питомца
   if (stateTextEl) {
     const sleepTxt = pet?.state === "sleeping" ? "😴 Питомец спит" : "☀️ Питомец бодрствует";
     stateTextEl.textContent = `${sleepTxt} • Эмоция: ${moodText(moodState)}`;
   }
 
-  // debug
+  // Отладочная информация
   if (debugEl) {
     debugEl.textContent = safeJson(me);
   }
 }
 
+// Функция для выполнения действия с питомцем
 async function doAction(type) {
   setBusy(true);
   setStatus("Действие...");
 
   try {
-    await postJson(`${API}/action`, { type }, token);
-    const me = await loadMe();
-    renderMe(me);
+    await postJson(`${API}/action`, { type }, token);  // Выполняем действие
+    const me = await loadMe();  // Получаем обновленные данные питомца
+    renderPetImage(me);  // Обновляем картинку питомца
+    renderMe(me);  // Обновляем все данные
     setStatus(`Ок: ${type} • ${moodText(me.moodState)}`);
   } catch (e) {
-    // если сервер вернул cooldown
     if (String(e.message).includes("too fast")) {
       setStatus("Слишком быстро 😅 Подожди пару секунд.");
     } else {
@@ -223,6 +267,7 @@ async function doAction(type) {
   }
 }
 
+// Основная функция, которая запускает бота и отображение
 async function main() {
   if (!tg) {
     setStatus("Открой это внутри Telegram (Mini App).");
