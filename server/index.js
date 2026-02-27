@@ -25,6 +25,24 @@ function makeToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
+// 3-state visual (based on average of 4 stats)
+function computeAvgStat(pet) {
+  const avg =
+    (Number(pet.hunger) +
+      Number(pet.mood) +
+      Number(pet.energy) +
+      Number(pet.cleanliness)) / 4;
+
+  return Math.max(0, Math.min(100, Math.round(avg)));
+}
+
+function computeVisualState(avg) {
+  // 0..29 bad, 30..59 mid, 60..100 good
+  if (avg < 30) return "bad";
+  if (avg < 60) return "mid";
+  return "good";
+}
+
 function computeMoodState(pet) {
   if (pet.state === "sleeping") return "sleeping";
   if (pet.hunger < 25) return "hungry";
@@ -73,6 +91,7 @@ function applyXp(user, pet, actionType) {
     user.level += 1;
     user.coins += 10;
 
+    // small bonus to pet
     pet.hunger = Math.min(100, pet.hunger + 10);
     pet.mood = Math.min(100, pet.mood + 10);
     pet.energy = Math.min(100, pet.energy + 10);
@@ -80,26 +99,10 @@ function applyXp(user, pet, actionType) {
 
     threshold = user.level * 50;
   }
-  function computeAvgStat(pet) {
-  const avg =
-    (Number(pet.hunger) +
-      Number(pet.mood) +
-      Number(pet.energy) +
-      Number(pet.cleanliness)) / 4;
-
-    return Math.max(0, Math.min(100, Math.round(avg)));
-  }
-
-  function computeVisualState(avg) {
-    if (avg < 30) return "bad";      // 0..29
-    if (avg < 60) return "mid";      // 30..59
-    return "good";                  // 60..100
-  }
 }
 
 // -------------------- migrations (safe) --------------------
 function ensureTablesAndColumns() {
-  // sessions table (needed for token auth)
   db.exec(`
     CREATE TABLE IF NOT EXISTS sessions (
       token TEXT PRIMARY KEY,
@@ -110,7 +113,7 @@ function ensureTablesAndColumns() {
     );
   `);
 
-  // if your old db existed without these columns, keep server from crashing
+  // safe for older dbs (if columns already exist -> ignore)
   try { db.prepare(`ALTER TABLE users ADD COLUMN coins INTEGER NOT NULL DEFAULT 0`).run(); } catch {}
   try { db.prepare(`ALTER TABLE users ADD COLUMN level INTEGER NOT NULL DEFAULT 1`).run(); } catch {}
   try { db.prepare(`ALTER TABLE users ADD COLUMN xp INTEGER NOT NULL DEFAULT 0`).run(); } catch {}
@@ -135,14 +138,12 @@ function requireAuth(req, res, next) {
   }
 
   req.telegramId = s.telegram_id;
-  req.sessionToken = token;
   next();
 }
 
 // -------------------- routes --------------------
 app.get("/", (req, res) => res.json({ status: "API working" }));
 
-// Auth: returns session token (use this token for all next requests)
 app.post("/auth/telegram", (req, res) => {
   const { initData } = req.body;
 
@@ -155,7 +156,7 @@ app.post("/auth/telegram", (req, res) => {
   const u = v.user;
   const ts = nowIso();
 
-  // upsert user (do not overwrite progress on conflict)
+  // create/update user without wiping progress
   db.prepare(`
     INSERT INTO users (telegram_id, first_name, username, coins, level, xp, created_at, last_seen_at)
     VALUES (?, ?, ?, 0, 1, 0, ?, ?)
@@ -165,7 +166,7 @@ app.post("/auth/telegram", (req, res) => {
       last_seen_at=excluded.last_seen_at
   `).run(u.id, u.first_name || "", u.username || "", ts, ts);
 
-  // create pet if not exists
+  // create pet if missing
   const pet = db.prepare(`SELECT * FROM pets WHERE telegram_id=?`).get(u.id);
   if (!pet) {
     db.prepare(`
@@ -174,7 +175,7 @@ app.post("/auth/telegram", (req, res) => {
     `).run(u.id, ts);
   }
 
-  // create session token (7 days)
+  // new session token (7 days)
   const token = makeToken();
   db.prepare(`
     INSERT INTO sessions (token, telegram_id, created_at, expires_at)
@@ -184,31 +185,28 @@ app.post("/auth/telegram", (req, res) => {
   res.json({ ok: true, token });
 });
 
-// Me: token-based (no telegramId in URL)
 app.get("/me", requireAuth, (req, res) => {
   const telegramId = req.telegramId;
 
   const user = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
   let pet = db.prepare(`SELECT * FROM pets WHERE telegram_id=?`).get(telegramId);
-
   if (!user || !pet) return res.status(404).json({ error: "not found" });
 
   pet = applyTimeDecay(pet);
 
   db.prepare(`
-    UPDATE pets SET hunger=?, mood=?, energy=?, cleanliness=?, state=?, updated_at=?
+    UPDATE pets
+    SET hunger=?, mood=?, energy=?, cleanliness=?, state=?, updated_at=?
     WHERE telegram_id=?
   `).run(pet.hunger, pet.mood, pet.energy, pet.cleanliness, pet.state, pet.updated_at, telegramId);
 
   const moodState = computeMoodState(pet);
-
   const avgStat = computeAvgStat(pet);
   const visualState = computeVisualState(avgStat);
 
   res.json({ user, pet, moodState, avgStat, visualState });
 });
 
-// Action: token-based + cooldown
 app.post("/action", requireAuth, (req, res) => {
   const telegramId = req.telegramId;
   const { type } = req.body;
@@ -219,7 +217,7 @@ app.post("/action", requireAuth, (req, res) => {
   let user = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
   if (!user) return res.status(404).json({ error: "user not found" });
 
-  // cooldown 2 seconds
+  // cooldown: 2 sec
   const now = Date.now();
   if (pet.last_action_at) {
     const last = new Date(pet.last_action_at).getTime();
@@ -268,11 +266,16 @@ app.post("/action", requireAuth, (req, res) => {
   );
 
   const moodState = computeMoodState(pet);
-
   const avgStat = computeAvgStat(pet);
   const visualState = computeVisualState(avgStat);
 
   res.json({ ok: true, user, pet, moodState, avgStat, visualState });
+});
+
+// optional: nicer 500 logs
+app.use((err, req, res, next) => {
+  console.error("UNHANDLED ERROR:", err);
+  res.status(500).json({ error: "internal error" });
 });
 
 // -------------------- start --------------------
