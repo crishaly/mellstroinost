@@ -57,36 +57,33 @@ function setBusy(v) {
   });
 }
 
+// Функция для обновления картинки питомца в зависимости от его состояния
 function renderPetImage(me) {
   if (!petImgEl) return;
 
-  const vs = me.pet?.visualState || "mid"; // Убедитесь, что правильно получаем состояние
+  // Получаем состояние питомца (по умолчанию "mid")
+  const vs = me.pet?.visualState || "mid";  // Если visualState не найден, ставим "mid" по умолчанию
 
-  // Логируем, чтобы убедиться, что состояние правильно передается
-  console.log(`Питомец в состоянии: ${vs}`);
+  console.log(`Питомец находится в состоянии: ${vs}`);  // Логируем состояние питомца для отладки
 
+  // Карты для состояний (bad, mid, good)
   const srcMap = {
-    bad: "./assets/bad.jpg",
-    mid: "./assets/mid.jpg",
-    good: "./assets/good.jpg",
+    bad: "./assets/bad.jpg",   // Картинка для плохого состояния
+    mid: "./assets/mid.jpg",   // Картинка для среднего состояния
+    good: "./assets/happy.jpg", // Картинка для хорошего состояния
   };
 
-  const labelMap = {
-    bad: "😵 Плохое",
-    mid: "😐 Среднее",
-    good: "😄 Хорошее",
-  };
+  // Устанавливаем картинку в зависимости от состояния питомца
+  petImgEl.src = srcMap[vs] || srcMap.mid;  // Если состояние не найдено, по умолчанию будет mid.jpg
 
-  // Если картинка не найдена, ставим изображение по умолчанию
-  if (!srcMap[vs]) {
-    console.error(`Изображение для состояния ${vs} не найдено!`);
-    petImgEl.src = srcMap.mid; // Устанавливаем дефолтное изображение
-  } else {
-    petImgEl.src = srcMap[vs];
-  }
-
+  // Обновляем текстовое описание состояния питомца
   if (visualLabelEl) {
-    visualLabelEl.textContent = `Состояние: ${labelMap[vs] || "—"}`;
+    const labelMap = {
+      bad: "😵 Плохое",
+      mid: "😐 Среднее",
+      good: "😄 Хорошее",
+    };
+    visualLabelEl.textContent = `Состояние: ${labelMap[vs] || "—"}`;  // Отображаем описание состояния питомца
   }
 }
 
@@ -145,12 +142,17 @@ async function getJson(url, token) {
   return j;
 }
 
+
 // Функция для загрузки информации о пользователе и питомце
+// Логируем состояние питомца для отладки
 async function loadMe() {
   const me = await getJson(`${API}/me`, token);  // Получаем актуальные данные с сервера
+  console.log(me); // Логируем весь объект, чтобы убедиться в получении данных
   setStatus(`Привет, ${me.user.first_name}!`);
-  renderPetImage(me);  // Вызываем рендер питомца
-  render(me);  // Вызываем рендер стата
+  
+  // Убедимся, что состояние питомца передается в renderPetImage
+  renderPetImage(me);  // Вызываем рендер питомца с актуальным состоянием
+  render(me);  // Рендерим другие данные
   return me;  // Возвращаем данные
 }
 
@@ -249,15 +251,16 @@ function renderMe(me) {
 }
 
 // Функция для выполнения действия с питомцем
+// Функция для выполнения действия с питомцем (например, кормление)
 async function doAction(type) {
   setBusy(true);
   setStatus("Действие...");
 
   try {
-    await postJson(`${API}/action`, { type }, token);  // Выполняем действие
-    const me = await loadMe();  // Получаем обновленные данные питомца
+    await postJson(`${API}/action`, { type }, token);  // Отправляем запрос на сервер
+    const me = await loadMe();  // Загружаем обновленные данные питомца
     renderPetImage(me);  // Обновляем картинку питомца
-    renderMe(me);  // Обновляем все данные
+    renderMe(me);  // Обновляем информацию о питомце
     setStatus(`Ок: ${type} • ${moodText(me.moodState)}`);
   } catch (e) {
     if (String(e.message).includes("too fast")) {
