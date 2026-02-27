@@ -61,7 +61,7 @@ function setBusy(v) {
 function renderPetImage(me) {
   if (!petImgEl) return;
 
-  // Получаем состояние питомца (по умолчанию "mid")
+  // Получаем визуальное состояние питомца (по умолчанию "mid")
   const vs = me.pet?.visualState || "mid";  // Если visualState не найден, ставим "mid" по умолчанию
 
   console.log(`Питомец находится в состоянии: ${vs}`);  // Логируем состояние питомца для отладки
@@ -147,12 +147,11 @@ async function getJson(url, token) {
 // Логируем состояние питомца для отладки
 async function loadMe() {
   const me = await getJson(`${API}/me`, token);  // Получаем актуальные данные с сервера
-  console.log(me); // Логируем весь объект, чтобы убедиться в получении данных
   setStatus(`Привет, ${me.user.first_name}!`);
   
-  // Убедимся, что состояние питомца передается в renderPetImage
+  // Обновляем картинку питомца в зависимости от visualState
   renderPetImage(me);  // Вызываем рендер питомца с актуальным состоянием
-  render(me);  // Рендерим другие данные
+  render(me);  // Рендерим другие данные (например, уровень, монеты и т.д.)
   return me;  // Возвращаем данные
 }
 
@@ -257,10 +256,10 @@ async function doAction(type) {
   setStatus("Действие...");
 
   try {
-    await postJson(`${API}/action`, { type }, token);  // Отправляем запрос на сервер
-    const me = await loadMe();  // Загружаем обновленные данные питомца
+    await postJson(`${API}/action`, { type }, token);  // Выполняем действие
+    const me = await loadMe();  // Получаем обновленные данные питомца
     renderPetImage(me);  // Обновляем картинку питомца
-    renderMe(me);  // Обновляем информацию о питомце
+    renderMe(me);  // Обновляем другие данные
     setStatus(`Ок: ${type} • ${moodText(me.moodState)}`);
   } catch (e) {
     if (String(e.message).includes("too fast")) {
@@ -273,6 +272,7 @@ async function doAction(type) {
     setBusy(false);
   }
 }
+
 function render(me) {
   const { user, pet, moodState } = me;
 

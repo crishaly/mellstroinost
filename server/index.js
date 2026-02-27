@@ -192,6 +192,7 @@ app.get("/me", requireAuth, (req, res) => {
   let pet = db.prepare(`SELECT * FROM pets WHERE telegram_id=?`).get(telegramId);
   if (!user || !pet) return res.status(404).json({ error: "not found" });
 
+  // Применяем время убыли и обновляем статы питомца
   pet = applyTimeDecay(pet);
 
   db.prepare(`
@@ -200,11 +201,23 @@ app.get("/me", requireAuth, (req, res) => {
     WHERE telegram_id=?
   `).run(pet.hunger, pet.mood, pet.energy, pet.cleanliness, pet.state, pet.updated_at, telegramId);
 
+  // Получаем состояние настроения питомца
   const moodState = computeMoodState(pet);
+
+  // Вычисляем среднее значение статов для питомца
   const avgStat = computeAvgStat(pet);
+
+  // Вычисляем визуальное состояние питомца на основе среднего значения статов
   const visualState = computeVisualState(avgStat);
 
-  res.json({ user, pet, moodState, avgStat, visualState });
+  // Отправляем данные на фронт, включая visualState
+  res.json({ 
+    user, 
+    pet, 
+    moodState, 
+    avgStat, 
+    visualState // Включаем visualState в ответ
+  });
 });
 
 app.post("/action", requireAuth, (req, res) => {
