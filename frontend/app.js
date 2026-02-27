@@ -57,7 +57,6 @@ function setBusy(v) {
   });
 }
 
-// Функция для обновления картинки питомца в зависимости от его состояния
 function renderPetImage(me) {
   if (!petImgEl) return;
 
@@ -73,8 +72,20 @@ function renderPetImage(me) {
     good: "./assets/happy.jpg", // Картинка для хорошего состояния
   };
 
+  // Логируем путь к изображению
+  console.log(`Устанавливаем картинку: ${srcMap[vs] || srcMap.mid}`); // Логируем путь к картинке
+
   // Устанавливаем картинку в зависимости от состояния питомца
   petImgEl.src = srcMap[vs] || srcMap.mid;  // Если состояние не найдено, по умолчанию будет mid.jpg
+
+  // Проверяем, загрузилась ли картинка
+  petImgEl.onload = () => {
+    console.log("Картинка успешно загружена!");
+  };
+
+  petImgEl.onerror = () => {
+    console.error("Ошибка загрузки картинки: ", srcMap[vs]);
+  };
 
   // Обновляем текстовое описание состояния питомца
   if (visualLabelEl) {
