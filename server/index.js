@@ -80,6 +80,21 @@ function applyXp(user, pet, actionType) {
 
     threshold = user.level * 50;
   }
+  function computeAvgStat(pet) {
+  const avg =
+    (Number(pet.hunger) +
+      Number(pet.mood) +
+      Number(pet.energy) +
+      Number(pet.cleanliness)) / 4;
+
+    return Math.max(0, Math.min(100, Math.round(avg)));
+  }
+
+  function computeVisualState(avg) {
+    if (avg < 30) return "bad";      // 0..29
+    if (avg < 60) return "mid";      // 30..59
+    return "good";                  // 60..100
+  }
 }
 
 // -------------------- migrations (safe) --------------------
@@ -186,7 +201,11 @@ app.get("/me", requireAuth, (req, res) => {
   `).run(pet.hunger, pet.mood, pet.energy, pet.cleanliness, pet.state, pet.updated_at, telegramId);
 
   const moodState = computeMoodState(pet);
-  res.json({ user, pet, moodState });
+
+  const avgStat = computeAvgStat(pet);
+  const visualState = computeVisualState(avgStat);
+
+  res.json({ user, pet, moodState, avgStat, visualState });
 });
 
 // Action: token-based + cooldown
@@ -249,7 +268,11 @@ app.post("/action", requireAuth, (req, res) => {
   );
 
   const moodState = computeMoodState(pet);
-  res.json({ ok: true, user, pet, moodState });
+
+  const avgStat = computeAvgStat(pet);
+  const visualState = computeVisualState(avgStat);
+
+  res.json({ ok: true, user, pet, moodState, avgStat, visualState });
 });
 
 // -------------------- start --------------------

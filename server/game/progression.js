@@ -1,5 +1,11 @@
 function applyXp(user, pet, actionType) {
-  const XP_PER_ACTION = 5;
+  const REWARDS = {
+  feed: { xp: 6, coins: 1 },
+  pet: { xp: 5, coins: 1 },
+  clean: { xp: 8, coins: 2 },
+  sleep: { xp: 3, coins: 0 },
+  wake: { xp: 2, coins: 0 },
+};
 
   user.level = user.level ?? 1;
   user.xp = user.xp ?? 0;
