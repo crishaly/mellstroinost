@@ -57,30 +57,34 @@ function setBusy(v) {
   });
 }
 
-// Функция для обновления картинки питомца в зависимости от его состояния
 function renderPetImage(me) {
   if (!petImgEl) return;
 
-  // Карты для состояний (bad, mid, good)
+  const vs = me.pet?.visualState || "mid"; // Убедитесь, что правильно получаем состояние
+
+  // Логируем, чтобы убедиться, что состояние правильно передается
+  console.log(`Питомец в состоянии: ${vs}`);
+
   const srcMap = {
-    bad: "./assets/bad.jpg",   // Картинка для плохого состояния
-    mid: "./assets/mid.jpg",   // Картинка для среднего состояния
-    good: "./assets/good.jpg", // Картинка для хорошего состояния
+    bad: "./assets/bad.jpg",
+    mid: "./assets/mid.jpg",
+    good: "./assets/good.jpg",
   };
 
   const labelMap = {
-    bad: "😵 Плохое",   // Плохое состояние
-    mid: "😐 Среднее",  // Среднее состояние
-    good: "😄 Хорошее", // Хорошее состояние
+    bad: "😵 Плохое",
+    mid: "😐 Среднее",
+    good: "😄 Хорошее",
   };
 
-  // Получаем состояние питомца (по умолчанию "mid")
-  const vs = me.visualState || "mid"; 
+  // Если картинка не найдена, ставим изображение по умолчанию
+  if (!srcMap[vs]) {
+    console.error(`Изображение для состояния ${vs} не найдено!`);
+    petImgEl.src = srcMap.mid; // Устанавливаем дефолтное изображение
+  } else {
+    petImgEl.src = srcMap[vs];
+  }
 
-  // Устанавливаем изображение питомца
-  petImgEl.src = srcMap[vs] || srcMap.mid;
-
-  // Обновляем текстовое описание состояния питомца
   if (visualLabelEl) {
     visualLabelEl.textContent = `Состояние: ${labelMap[vs] || "—"}`;
   }
