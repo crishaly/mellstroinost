@@ -1,16 +1,36 @@
 const tg = window.Telegram?.WebApp;
 
-const statusEl = document.getElementById("status");
-const dataEl = document.getElementById("data");
-
 const API = "https://mellstroinost.onrender.com";
+
+const statusEl = document.getElementById("status");
+const petNameEl = document.getElementById("petName");
+const stateTextEl = document.getElementById("stateText");
+
+const hungerBar = document.getElementById("hungerBar");
+const moodBar = document.getElementById("moodBar");
+const energyBar = document.getElementById("energyBar");
+const cleanBar = document.getElementById("cleanBar");
+
+const actionsBox = document.getElementById("actions");
+
+let telegramId = null;
+let loading = false;
 
 function setStatus(text) {
   statusEl.textContent = text;
 }
 
-function render(obj) {
-  dataEl.textContent = JSON.stringify(obj, null, 2);
+function setBar(el, value) {
+  el.style.width = Math.max(0, Math.min(100, value)) + "%";
+
+  if (value < 30) el.style.background = "#ef4444";
+  else if (value < 60) el.style.background = "#f59e0b";
+  else el.style.background = "#22c55e";
+}
+
+function setLoading(state) {
+  loading = state;
+  document.querySelectorAll("button").forEach(b => b.disabled = state);
 }
 
 async function postJson(url, body) {
@@ -31,9 +51,58 @@ async function getJson(url) {
   return j;
 }
 
+function render(pet, user) {
+  petNameEl.textContent = `Игрок: ${user.first_name} (@${user.username || "-"})`;
+
+  setBar(hungerBar, pet.hunger);
+  setBar(moodBar, pet.mood);
+  setBar(energyBar, pet.energy);
+  setBar(cleanBar, pet.cleanliness);
+
+  stateTextEl.textContent = pet.state === "sleeping"
+    ? "😴 Питомец спит"
+    : "☀️ Питомец бодрствует";
+}
+
+async function loadState() {
+  const me = await getJson(`${API}/me/${telegramId}`);
+  render(me.pet, me.user);
+}
+
+async function doAction(type) {
+  try {
+    setLoading(true);
+    setStatus("Выполняем действие...");
+    await postJson(`${API}/action/${telegramId}`, { type });
+    await loadState();
+    setStatus("Готово");
+  } catch (e) {
+    setStatus("Ошибка: " + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function createButtons() {
+  const actions = [
+    ["feed", "🍔 Покормить"],
+    ["pet", "🖐️ Погладить"],
+    ["clean", "🧼 Убрать"],
+    ["sleep", "😴 Спать"],
+    ["wake", "☀️ Разбудить"],
+  ];
+
+  actions.forEach(([type, label]) => {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.onclick = () => doAction(type);
+    actionsBox.appendChild(btn);
+  });
+}
+
 async function main() {
   if (!tg) {
-    setStatus("Открой это внутри Telegram (Mini App).");
+    setStatus("Открой внутри Telegram");
     return;
   }
 
@@ -43,65 +112,24 @@ async function main() {
   setStatus("Авторизация...");
 
   const initData = tg.initData;
-  const initUnsafe = tg.initDataUnsafe;
-  const user = initUnsafe?.user;
+  const user = tg.initDataUnsafe?.user;
 
   if (!user?.id) {
-    setStatus("Нет данных пользователя (открой через кнопку бота).");
-    render({ initData, initUnsafe });
+    setStatus("Нет данных пользователя");
     return;
   }
 
-  // 1) auth
   const auth = await postJson(`${API}/auth/telegram`, { initData });
+  telegramId = auth.telegram_id;
 
-  // 2) get state
-  const me = await getJson(`${API}/me/${auth.telegram_id}`);
+  createButtons();
+  await loadState();
 
-  setStatus(`Привет, ${me.user.first_name}!`);
-  render(me);
+  setStatus("Игра загружена");
 
-  // простые кнопки управления прямо в DOM (временно, для теста)
-  const actions = [
-    ["feed", "🍔 Покормить"],
-    ["pet", "🖐️ Погладить"],
-    ["clean", "🧼 Убрать"],
-    ["sleep", "😴 Спать"],
-    ["wake", "☀️ Разбудить"],
-  ];
-
-  const box = document.createElement("div");
-  box.style.marginTop = "12px";
-  box.style.display = "flex";
-  box.style.flexWrap = "wrap";
-  box.style.gap = "8px";
-
-  actions.forEach(([type, label]) => {
-    const btn = document.createElement("button");
-    btn.textContent = label;
-    btn.style.padding = "10px 12px";
-    btn.style.borderRadius = "10px";
-    btn.style.border = "1px solid #ddd";
-    btn.style.cursor = "pointer";
-
-    btn.onclick = async () => {
-      try {
-        setStatus("Действие...");
-        const res = await postJson(`${API}/action/${auth.telegram_id}`, { type });
-        const updated = await getJson(`${API}/me/${auth.telegram_id}`);
-        setStatus(`Ок: ${label}`);
-        render(updated);
-      } catch (e) {
-        setStatus(`Ошибка: ${e.message}`);
-      }
-    };
-
-    box.appendChild(btn);
-  });
-
-  document.body.appendChild(box);
+  setInterval(loadState, 15000); // автообновление каждые 15 секунд
 }
 
-main().catch((e) => {
-  setStatus(`Ошибка: ${e.message}`);
+main().catch(e => {
+  setStatus("Ошибка: " + e.message);
 });
