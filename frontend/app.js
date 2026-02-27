@@ -266,6 +266,44 @@ async function doAction(type) {
     setBusy(false);
   }
 }
+function render(me) {
+  const { user, pet, moodState } = me;
+
+  // 1) Обновляем имя игрока
+  if (petNameEl) {
+    const uname = user?.username ? `@${user.username}` : "@-";
+    petNameEl.textContent = `Игрок: ${user?.first_name || "-"} (${uname})`;
+  }
+
+  // 2) Обновляем информацию об уровне и XP
+  if (levelInfoEl) {
+    const lvl = user?.level ?? 1;
+    const xp = user?.xp ?? 0;
+    const coins = user?.coins ?? 0;
+    const threshold = (lvl || 1) * 50;
+    levelInfoEl.textContent = `Уровень: ${lvl} | XP: ${xp}/${threshold} | Монеты: ${coins}`;
+  }
+
+  // 3) Обновляем бары (голод, настроение, энергия и чистота)
+  setBar(hungerBar, pet?.hunger);
+  setBar(moodBar, pet?.mood);
+  setBar(energyBar, pet?.energy);
+  setBar(cleanBar, pet?.cleanliness);
+
+  // 4) Обновляем статус питомца (спит или бодрствует)
+  if (stateTextEl) {
+    const sleepTxt = pet?.state === "sleeping" ? "😴 Питомец спит" : "☀️ Питомец бодрствует";
+    stateTextEl.textContent = `${sleepTxt} • Эмоция: ${moodText(moodState)}`;
+  }
+
+  // 5) Обновляем картинку питомца в зависимости от состояния
+  renderPetImage(me);
+
+  // 6) Отладочная информация (если нужно)
+  if (debugEl) {
+    debugEl.textContent = safeJson(me);
+  }
+}
 
 // Основная функция, которая запускает бота и отображение
 async function main() {
