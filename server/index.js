@@ -91,11 +91,18 @@ app.post("/action/:telegramId", (req, res) => {
   const telegramId = Number(req.params.telegramId);
   const { type } = req.body;
 
+  // 1) load pet
   let pet = db.prepare(`SELECT * FROM pets WHERE telegram_id=?`).get(telegramId);
   if (!pet) return res.status(404).json({ error: "pet not found" });
 
+  // 2) load user
+  let user = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
+  if (!user) return res.status(404).json({ error: "user not found" });
+
+  // 3) time decay
   pet = applyTimeDecay(pet);
 
+  // 4) apply action
   if (type === "feed") pet.hunger = Math.min(100, pet.hunger + 20);
   else if (type === "pet") pet.mood = Math.min(100, pet.mood + 15);
   else if (type === "clean") pet.cleanliness = Math.min(100, pet.cleanliness + 25);
@@ -103,16 +110,38 @@ app.post("/action/:telegramId", (req, res) => {
   else if (type === "wake") pet.state = "awake";
   else return res.status(400).json({ error: "unknown action" });
 
+  // 5) xp/level (applyXp MUST be declared above, outside this route)
+  applyXp(user, pet, type);
+
+  // 6) save pet
   pet.updated_at = nowIso();
-
   db.prepare(`
-    UPDATE pets SET hunger=?, mood=?, energy=?, cleanliness=?, state=?, updated_at=?
+    UPDATE pets
+    SET hunger=?, mood=?, energy=?, cleanliness=?, state=?, updated_at=?
     WHERE telegram_id=?
-  `).run(pet.hunger, pet.mood, pet.energy, pet.cleanliness, pet.state, pet.updated_at, telegramId);
+  `).run(
+    pet.hunger,
+    pet.mood,
+    pet.energy,
+    pet.cleanliness,
+    pet.state,
+    pet.updated_at,
+    telegramId
+  );
 
-  res.json({ ok: true, pet });
-});
+  // 7) save user
+  db.prepare(`
+    UPDATE users
+    SET level=?, xp=?, coins=?, last_seen_at=?
+    WHERE telegram_id=?
+  `).run(
+    user.level ?? 1,
+    user.xp ?? 0,
+    user.coins ?? 0,
+    nowIso(),
+    telegramId
+  );
 
-app.listen(process.env.PORT || 3001, () => {
-  console.log("API listening on port", process.env.PORT || 3001);
+  // 8) response
+  res.json({ ok: true, pet, user });
 });

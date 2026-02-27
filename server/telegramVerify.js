@@ -23,7 +23,19 @@ function verifyTelegramInitData(initData, botToken) {
     .update(dataCheckString)
     .digest("hex");
 
-  if (computedHash !== hash) return { ok: false, error: "hash mismatch" };
+      if (computedHash !== String(hash).toLowerCase()) {
+    return {
+      ok: false,
+      error: "hash mismatch",
+      receivedHash: hash,
+      computedHash,
+      dataCheckStringPreview: dataCheckString.slice(0, 200),
+      initDataLen: String(initData || "").length,
+    };
+  }
+  if (computedHash !== String(hash).toLowerCase()) {
+    return { ok: false, error: "hash mismatch" };
+  }
 
   const userJson = params.get("user");
   const user = userJson ? JSON.parse(userJson) : null;
