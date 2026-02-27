@@ -63,9 +63,9 @@ function renderPetImage(me) {
 
   // Карты для состояний (bad, mid, good)
   const srcMap = {
-    bad: "./assets/pet_bad.jpg",   // Картинка для плохого состояния
-    mid: "./assets/pet_mid.jpg",   // Картинка для среднего состояния
-    good: "./assets/pet_good.jpg", // Картинка для хорошего состояния
+    bad: "./assets/bad.jpg",   // Картинка для плохого состояния
+    mid: "./assets/mid.jpg",   // Картинка для среднего состояния
+    good: "./assets/good.jpg", // Картинка для хорошего состояния
   };
 
   const labelMap = {
