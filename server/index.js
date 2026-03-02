@@ -9,7 +9,7 @@ const { verifyTelegramInitData } = require("./telegramVerify");
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/assets', express.static('../frontend/assets'));
+
 
 // -------------------- helpers --------------------
 function nowIso() {
@@ -53,6 +53,12 @@ function computeMoodState(pet) {
   if (pet.hunger > 70 && pet.cleanliness > 70 && pet.energy > 70 && pet.mood > 70) return "happy";
   return "ok";
 }
+const FOOD_CATALOG = {
+  apple: { price: 0, hunger: 10, mood: 0 },
+  pizza: { price: 5, hunger: 20, mood: 0 },
+  fish:  { price: 7, hunger: 15, mood: 5 },
+  cake:  { price: 10, hunger: 10, mood: 10 },
+};
 
 function applyTimeDecay(pet) {
   const now = Date.now();
@@ -111,6 +117,14 @@ function ensureTablesAndColumns() {
       created_at TEXT NOT NULL,
       expires_at TEXT NOT NULL,
       FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
+    );
+  `);
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS inventory (
+      telegram_id INTEGER NOT NULL,
+      item_id TEXT NOT NULL,
+      qty INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (telegram_id, item_id)
     );
   `);
 
@@ -211,14 +225,17 @@ app.get("/me", requireAuth, (req, res) => {
   // Вычисляем визуальное состояние питомца на основе среднего значения статов
   const visualState = computeVisualState(avgStat);
 
+  const inventory = db.prepare(`SELECT item_id, qty FROM inventory WHERE telegram_id=?`).all(telegramId);
   // Отправляем данные на фронт, включая visualState
   res.json({ 
     user, 
     pet, 
     moodState, 
     avgStat, 
-    visualState // Включаем visualState в ответ
+    visualState,
+    inevntory // Включаем visualState в ответ
   });
+  
 });
 
 app.post("/action", requireAuth, (req, res) => {
@@ -285,7 +302,74 @@ app.post("/action", requireAuth, (req, res) => {
 
   res.json({ ok: true, user, pet, moodState, avgStat, visualState });
 });
+app.get("/shop/food", requireAuth, (req, res) => {
+  const items = Object.entries(FOOD_CATALOG).map(([id, v]) => ({
+    id,
+    price: v.price,
+    hunger: v.hunger,
+    mood: v.mood,
+  }));
+  res.json({ items });
+});
+app.post("/shop/buy", requireAuth, (req, res) => {
+  const telegramId = req.telegramId;
+  const { itemId, qty } = req.body;
 
+  const item = FOOD_CATALOG[itemId];
+  if (!item) return res.status(400).json({ error: "unknown item" });
+
+  const buyQty = Math.max(1, Math.min(99, Number(qty || 1)));
+  const cost = item.price * buyQty;
+
+  const user = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
+  if (!user) return res.status(404).json({ error: "user not found" });
+
+  if ((user.coins ?? 0) < cost) return res.status(400).json({ error: "not enough coins" });
+
+  db.prepare(`UPDATE users SET coins=?, last_seen_at=? WHERE telegram_id=?`)
+    .run((user.coins ?? 0) - cost, nowIso(), telegramId);
+
+  db.prepare(`
+    INSERT INTO inventory (telegram_id, item_id, qty)
+    VALUES (?, ?, ?)
+    ON CONFLICT(telegram_id, item_id) DO UPDATE SET qty = qty + excluded.qty
+  `).run(telegramId, itemId, buyQty);
+
+  res.json({ ok: true });
+});
+app.post("/food/use", requireAuth, (req, res) => {
+  const telegramId = req.telegramId;
+  const { itemId } = req.body;
+
+  const item = FOOD_CATALOG[itemId];
+  if (!item) return res.status(400).json({ error: "unknown item" });
+
+  const inv = db.prepare(`SELECT qty FROM inventory WHERE telegram_id=? AND item_id=?`).get(telegramId, itemId);
+  if (!inv || inv.qty <= 0) return res.status(400).json({ error: "no item in inventory" });
+
+  let pet = db.prepare(`SELECT * FROM pets WHERE telegram_id=?`).get(telegramId);
+  if (!pet) return res.status(404).json({ error: "pet not found" });
+
+  pet = applyTimeDecay(pet);
+
+  pet.hunger = Math.min(100, pet.hunger + item.hunger);
+  pet.mood = Math.min(100, pet.mood + item.mood);
+  pet.updated_at = nowIso();
+  pet.last_action_at = nowIso();
+
+  db.prepare(`UPDATE pets SET hunger=?, mood=?, energy=?, cleanliness=?, state=?, updated_at=?, last_action_at=? WHERE telegram_id=?`)
+    .run(pet.hunger, pet.mood, pet.energy, pet.cleanliness, pet.state, pet.updated_at, pet.last_action_at, telegramId);
+
+  db.prepare(`UPDATE inventory SET qty = qty - 1 WHERE telegram_id=? AND item_id=?`).run(telegramId, itemId);
+
+  const moodState = computeMoodState(pet);
+  const avgStat = computeAvgStat(pet);
+  const visualState = computeVisualState(avgStat);
+  const user = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
+  const inventory = db.prepare(`SELECT item_id, qty FROM inventory WHERE telegram_id=?`).all(telegramId);
+
+  res.json({ ok: true, user, pet, moodState, avgStat, visualState, inventory });
+});
 // optional: nicer 500 logs
 app.use((err, req, res, next) => {
   console.error("UNHANDLED ERROR:", err);
