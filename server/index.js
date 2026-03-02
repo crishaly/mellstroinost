@@ -10,7 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
 // -------------------- helpers --------------------
 function nowIso() {
   return new Date().toISOString();
@@ -53,6 +52,8 @@ function computeMoodState(pet) {
   if (pet.hunger > 70 && pet.cleanliness > 70 && pet.energy > 70 && pet.mood > 70) return "happy";
   return "ok";
 }
+
+// food catalog (server source of truth)
 const FOOD_CATALOG = {
   apple: { price: 0, hunger: 10, mood: 0 },
   pizza: { price: 5, hunger: 20, mood: 0 },
@@ -82,7 +83,7 @@ function applyTimeDecay(pet) {
   return { ...pet, hunger, cleanliness, energy, mood, updated_at: nowIso() };
 }
 
-function applyXp(user, pet, actionType) {
+function applyXp(user, pet) {
   const XP_PER_ACTION = 5;
 
   user.level = user.level ?? 1;
@@ -119,7 +120,8 @@ function ensureTablesAndColumns() {
       FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
     );
   `);
-    db.exec(`
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS inventory (
       telegram_id INTEGER NOT NULL,
       item_id TEXT NOT NULL,
@@ -137,6 +139,15 @@ function ensureTablesAndColumns() {
 }
 
 ensureTablesAndColumns();
+
+function safeGetInventory(telegramId) {
+  try {
+    return db.prepare(`SELECT item_id, qty FROM inventory WHERE telegram_id=?`).all(telegramId);
+  } catch (e) {
+    console.error("safeGetInventory error:", e?.message || e);
+    return [];
+  }
+}
 
 // -------------------- auth middleware --------------------
 function requireAuth(req, res, next) {
@@ -207,7 +218,6 @@ app.get("/me", requireAuth, (req, res) => {
   let pet = db.prepare(`SELECT * FROM pets WHERE telegram_id=?`).get(telegramId);
   if (!user || !pet) return res.status(404).json({ error: "not found" });
 
-  // Применяем время убыли и обновляем статы питомца
   pet = applyTimeDecay(pet);
 
   db.prepare(`
@@ -216,26 +226,13 @@ app.get("/me", requireAuth, (req, res) => {
     WHERE telegram_id=?
   `).run(pet.hunger, pet.mood, pet.energy, pet.cleanliness, pet.state, pet.updated_at, telegramId);
 
-  // Получаем состояние настроения питомца
   const moodState = computeMoodState(pet);
-
-  // Вычисляем среднее значение статов для питомца
   const avgStat = computeAvgStat(pet);
-
-  // Вычисляем визуальное состояние питомца на основе среднего значения статов
   const visualState = computeVisualState(avgStat);
 
-  const inventory = db.prepare(`SELECT item_id, qty FROM inventory WHERE telegram_id=?`).all(telegramId);
-  // Отправляем данные на фронт, включая visualState
-  res.json({ 
-    user, 
-    pet, 
-    moodState, 
-    avgStat, 
-    visualState,
-    inevntory // Включаем visualState в ответ
-  });
-  
+  const inventory = safeGetInventory(telegramId);
+
+  res.json({ user, pet, moodState, avgStat, visualState, inventory });
 });
 
 app.post("/action", requireAuth, (req, res) => {
@@ -264,7 +261,7 @@ app.post("/action", requireAuth, (req, res) => {
   else if (type === "wake") pet.state = "awake";
   else return res.status(400).json({ error: "unknown action" });
 
-  applyXp(user, pet, type);
+  applyXp(user, pet);
 
   pet.updated_at = nowIso();
   pet.last_action_at = nowIso();
@@ -299,9 +296,12 @@ app.post("/action", requireAuth, (req, res) => {
   const moodState = computeMoodState(pet);
   const avgStat = computeAvgStat(pet);
   const visualState = computeVisualState(avgStat);
+  const inventory = safeGetInventory(telegramId);
 
-  res.json({ ok: true, user, pet, moodState, avgStat, visualState });
+  res.json({ ok: true, user, pet, moodState, avgStat, visualState, inventory });
 });
+
+// -------- shop endpoints --------
 app.get("/shop/food", requireAuth, (req, res) => {
   const items = Object.entries(FOOD_CATALOG).map(([id, v]) => ({
     id,
@@ -311,6 +311,7 @@ app.get("/shop/food", requireAuth, (req, res) => {
   }));
   res.json({ items });
 });
+
 app.post("/shop/buy", requireAuth, (req, res) => {
   const telegramId = req.telegramId;
   const { itemId, qty } = req.body;
@@ -337,6 +338,7 @@ app.post("/shop/buy", requireAuth, (req, res) => {
 
   res.json({ ok: true });
 });
+
 app.post("/food/use", requireAuth, (req, res) => {
   const telegramId = req.telegramId;
   const { itemId } = req.body;
@@ -357,23 +359,36 @@ app.post("/food/use", requireAuth, (req, res) => {
   pet.updated_at = nowIso();
   pet.last_action_at = nowIso();
 
-  db.prepare(`UPDATE pets SET hunger=?, mood=?, energy=?, cleanliness=?, state=?, updated_at=?, last_action_at=? WHERE telegram_id=?`)
-    .run(pet.hunger, pet.mood, pet.energy, pet.cleanliness, pet.state, pet.updated_at, pet.last_action_at, telegramId);
+  db.prepare(`
+    UPDATE pets
+    SET hunger=?, mood=?, energy=?, cleanliness=?, state=?, updated_at=?, last_action_at=?
+    WHERE telegram_id=?
+  `).run(
+    pet.hunger,
+    pet.mood,
+    pet.energy,
+    pet.cleanliness,
+    pet.state,
+    pet.updated_at,
+    pet.last_action_at,
+    telegramId
+  );
 
   db.prepare(`UPDATE inventory SET qty = qty - 1 WHERE telegram_id=? AND item_id=?`).run(telegramId, itemId);
 
+  const user = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
   const moodState = computeMoodState(pet);
   const avgStat = computeAvgStat(pet);
   const visualState = computeVisualState(avgStat);
-  const user = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
-  const inventory = db.prepare(`SELECT item_id, qty FROM inventory WHERE telegram_id=?`).all(telegramId);
+  const inventory = safeGetInventory(telegramId);
 
   res.json({ ok: true, user, pet, moodState, avgStat, visualState, inventory });
 });
-// optional: nicer 500 logs
+
+// optional: nicer 500 logs (returns message so you can debug)
 app.use((err, req, res, next) => {
-  console.error("UNHANDLED ERROR:", err);
-  res.status(500).json({ error: "internal error" });
+  console.error("UNHANDLED ERROR:", err?.stack || err);
+  res.status(500).json({ error: "internal error", message: String(err?.message || err) });
 });
 
 // -------------------- start --------------------
