@@ -9,6 +9,7 @@ const { verifyTelegramInitData } = require("./telegramVerify");
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/assets', express.static('../frontend/assets'));
 
 // -------------------- helpers --------------------
 function nowIso() {

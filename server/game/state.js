@@ -30,4 +30,4 @@ function computeVisualState(pet) {
   return "mid"; // Если ни одно из состояний не подходит, по умолчанию "mid"
 }
 
-module.exports = { computeMoodState, computeVisualState };
+module.exports = { computeMoodState, computeVisualState };  

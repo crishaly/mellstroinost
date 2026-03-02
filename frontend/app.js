@@ -61,7 +61,7 @@ function renderPetImage(me) {
   if (!petImgEl) return;
 
   // Получаем визуальное состояние питомца (по умолчанию "mid")
-  const vs = me.pet?.visualState || "mid";  // Если visualState не найден, ставим "mid" по умолчанию
+  const vs = me.visualState || "mid";  // Если visualState не найден, ставим "mid" по умолчанию
 
   console.log(`Питомец находится в состоянии: ${vs}`);  // Логируем состояние питомца для отладки
 
