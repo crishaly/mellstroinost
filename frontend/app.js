@@ -26,11 +26,15 @@ const foodFeedBtn = document.getElementById("foodFeedBtn");
 const foodEmojiEl = document.getElementById("foodEmoji");
 const foodNameEl = document.getElementById("foodName");
 const foodDescEl = document.getElementById("foodDesc");
+const foodMetaEl = document.getElementById("foodMeta");
 
 let token = null;
 let currentRoom = "kitchen";
 let isBusy = false;
 let mode = "main"; // "main" | "food"
+let meCache = null;          // последнее состояние /me
+let shopFood = [];           // список еды с сервера (цены/эффекты)
+let invMap = {};             // item_id -> qty
 
 const ROOMS = [
   { id: "kitchen", label: "🍽️ Кухня" },
@@ -56,10 +60,10 @@ const ACTIONS_BY_ROOM = {
 };
 
 const FOODS = [
-  { id: "apple", emoji: "🍎", name: "Яблоко", desc: "+10 голод" },
-  { id: "pizza", emoji: "🍕", name: "Пицца", desc: "+20 голод" },
-  { id: "fish",  emoji: "🐟", name: "Рыбка",  desc: "+15 голод, +5 настроение" },
-  { id: "cake",  emoji: "🍰", name: "Тортик", desc: "+10 голод, +10 настроение" },
+  { id: "apple", emoji: "🍎", name: "Яблоко" },
+  { id: "pizza", emoji: "🍕", name: "Пицца" },
+  { id: "fish",  emoji: "🐟", name: "Рыбка" },
+  { id: "cake",  emoji: "🍰", name: "Тортик" },
 ];
 
 let foodIndex = 0;
@@ -141,6 +145,22 @@ function safeJson(obj) {
     return String(obj);
   }
 }
+function rebuildInventoryMap(inventoryArr) {
+  const m = {};
+  (inventoryArr || []).forEach((it) => {
+    m[it.item_id] = Number(it.qty) || 0;
+  });
+  invMap = m;
+}
+
+function getQty(itemId) {
+  return Number(invMap[itemId]) || 0;
+}
+
+async function loadShopFood() {
+  const j = await getJson(`${API}/shop/food`, token);
+  shopFood = j.items || [];
+}
 
 // Функция для отправки JSON на сервер
 async function postJson(url, body, token) {
@@ -175,13 +195,20 @@ async function getJson(url, token) {
 // Функция для загрузки информации о пользователе и питомце
 // Логируем состояние питомца для отладки
 async function loadMe() {
-  const me = await getJson(`${API}/me`, token);  // Получаем актуальные данные с сервера
+  const me = await getJson(`${API}/me`, token);
+
+  meCache = me;
+  rebuildInventoryMap(me.inventory);
+
   setStatus(`Привет, ${me.user.first_name}!`);
-  
-  // Обновляем картинку питомца в зависимости от visualState
-  renderPetImage(me);  // Вызываем рендер питомца с актуальным состоянием
-  render(me);  // Рендерим другие данные (например, уровень, монеты и т.д.)
-  return me;  // Возвращаем данные
+
+  renderPetImage(me);
+  render(me);
+
+  // если мы на экране еды — перерендерим мету еды (qty/price)
+  if (mode === "food") renderFood();
+
+  return me;
 }
 
 // Рендерим доступные комнаты
@@ -255,12 +282,42 @@ function setMode(next) {
 }
 
 function renderFood() {
-  const item = FOODS[foodIndex] || FOODS[0];
-  if (!item) return;
+  const uiItem = FOODS[foodIndex] || FOODS[0];
+  if (!uiItem) return;
 
-  if (foodEmojiEl) foodEmojiEl.textContent = item.emoji;
-  if (foodNameEl) foodNameEl.textContent = item.name;
-  if (foodDescEl) foodDescEl.textContent = item.desc;
+  const serverItem = (shopFood || []).find((x) => x.id === uiItem.id) || null;
+
+  const price = serverItem ? (serverItem.price ?? 0) : 0;
+  const hungerPlus = serverItem ? (serverItem.hunger ?? 0) : 0;
+  const moodPlus = serverItem ? (serverItem.mood ?? 0) : 0;
+
+  const qty = getQty(uiItem.id);
+  const coins = meCache?.user?.coins ?? 0;
+
+  if (foodEmojiEl) foodEmojiEl.textContent = uiItem.emoji;
+  if (foodNameEl) foodNameEl.textContent = uiItem.name;
+
+  // описание эффектов
+  const parts = [];
+  if (hungerPlus) parts.push(`+${hungerPlus} голод`);
+  if (moodPlus) parts.push(`+${moodPlus} настроение`);
+  if (foodDescEl) foodDescEl.textContent = parts.length ? parts.join(" • ") : "—";
+
+  // meta: цена/наличие
+  if (foodMetaEl) {
+    foodMetaEl.textContent = `Цена: ${price} • В наличии: ${qty} • Монеты: ${coins}`;
+  }
+
+  // кнопка: использовать или купить
+  if (foodFeedBtn) {
+    if (qty > 0) {
+      foodFeedBtn.textContent = "✅ Использовать";
+      foodFeedBtn.disabled = isBusy;
+    } else {
+      foodFeedBtn.textContent = price > 0 ? `🛒 Купить (${price})` : "🛒 Взять бесплатно";
+      foodFeedBtn.disabled = isBusy || coins < price;
+    }
+  }
 }
 
 function openFoodMenu() {
@@ -280,12 +337,40 @@ if (foodExitBtn) foodExitBtn.onclick = () => { if (!isBusy) closeFoodMenu(); };
 
 if (foodFeedBtn) foodFeedBtn.onclick = async () => {
   if (isBusy) return;
-  // пока MVP: любое блюдо = action "feed"
+
+  const uiItem = FOODS[foodIndex] || FOODS[0];
+  if (!uiItem) return;
+
+  const serverItem = (shopFood || []).find((x) => x.id === uiItem.id) || null;
+  const price = serverItem ? (serverItem.price ?? 0) : 0;
+
+  const qty = getQty(uiItem.id);
+
   try {
-    await doAction("feed");
-    closeFoodMenu();
+    setBusy(true);
+
+    if (qty > 0) {
+      // ✅ использовать из инвентаря
+      await postJson(`${API}/food/use`, { itemId: uiItem.id }, token);
+      await loadMe();
+      setStatus(`Ок: использовано ${uiItem.name}`);
+      closeFoodMenu();
+      return;
+    }
+
+    // ✅ купить (qty == 0)
+    await postJson(`${API}/shop/buy`, { itemId: uiItem.id, qty: 1 }, token);
+    await loadMe();
+    setStatus(price > 0 ? `Ок: куплено ${uiItem.name}` : `Ок: взято ${uiItem.name}`);
+
+    // после покупки остаёмся в меню — теперь станет “Использовать”
+    renderFood();
   } catch (e) {
-    // doAction уже ставит статус
+    const msg = String(e.message || e);
+    if (msg.includes("not enough coins")) setStatus("Не хватает монет 😢");
+    else setStatus("Ошибка: " + msg);
+  } finally {
+    setBusy(false);
   }
 };
 
@@ -426,7 +511,7 @@ async function main() {
   // auth -> token
   const auth = await postJson(`${API}/auth/telegram`, { initData }, null);
   token = auth.token;
-
+  await loadShopFood();
   // initial render
   renderRooms();
   renderActions();
