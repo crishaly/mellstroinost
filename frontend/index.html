@@ -8,292 +8,13 @@
 
   <style>
     * { box-sizing: border-box; }
-
-    :root{
-      --bg: #0f172a;
-      --card: #1e293b;
-      --muted: rgba(255,255,255,.72);
-      --muted2: rgba(255,255,255,.55);
-      --line: rgba(255,255,255,.10);
-      --btn: #e2e8f0;
-      --btnText: #0f172a;
-      --pill: rgba(255,255,255,.08);
-    }
-
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: white;
-    }
-
-    .wrap{
-      max-width: 520px;
-      margin: 0 auto;
-      padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
-    }
-
-    header{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    h1{
-      margin:0;
-      font-size: 18px;
-      letter-spacing: .2px;
-    }
-
-    #status{
-      font-size: 13px;
-      color: var(--muted);
-      margin: 8px 0 12px;
-      line-height: 1.25;
-    }
-
-    .card{
-      background: var(--card);
-      border: 1px solid var(--line);
-      padding: 14px;
-      border-radius: 16px;
-      margin-bottom: 12px;
-    }
-
-    .row{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    #petName{
-      font-weight: 650;
-      font-size: 14px;
-    }
-
-    #levelInfo{
-      font-size: 12px;
-      color: var(--muted);
-      background: var(--pill);
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-    }
-
-    .state{
-      margin-top: 10px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .stat{
-      margin-top: 12px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .bar{
-      height: 12px;
-      background: rgba(255,255,255,.08);
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 6px;
-      border: 1px solid var(--line);
-    }
-
-    .fill{
-      height: 100%;
-      width: 0%;
-      background: #22c55e;
-      transition: width 0.25s ease;
-    }
-    /* -------- SCENE (фон комнаты) -------- */
-
-    .scene{
-      border-radius: 16px;
-      padding: 20px;
-      margin-top: 12px;
-      margin-bottom: 12px;
-      text-align: center;
-      transition: background 0.3s ease;
-      display:flex;
-      justify-content:center;
-    }
-
-    /* кухня */
-    .scene--kitchen{
-      background: linear-gradient(135deg, #1f2937, #374151);
-    }
-
-    /* спальня */
-    .scene--bedroom{
-      background: linear-gradient(135deg, #312e81, #4338ca);
-    }
-
-    /* ванная */
-    .scene--bathroom{
-      background: linear-gradient(135deg, #0e7490, #06b6d4);
-    }
-
-    /* игровая */
-    .scene--playroom{
-      background: linear-gradient(135deg, #7c2d12, #ea580c);
-    }
-
-    /* tabs (rooms) */
-    .tabs{
-      display:flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .tab{
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: var(--pill);
-      border: 1px solid var(--line);
-      color: var(--muted);
-      cursor: pointer;
-      user-select:none;
-      font-size: 12px;
-    }
-    .tab.active{
-      background: rgba(226,232,240,.18);
-      color: #fff;
-      border-color: rgba(226,232,240,.25);
-    }
-
-    /* actions */
-    #actions{
-      display:flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    button{
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 0;
-      cursor: pointer;
-      background: var(--btn);
-      color: var(--btnText);
-      font-weight: 650;
-      font-size: 14px;
-    }
-
-    button:disabled{
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    .hint{
-      margin-top: 10px;
-      font-size: 12px;
-      color: var(--muted2);
-      line-height: 1.25;
-    }
-
-    /* debug */
-    details{
-      margin-top: 12px;
-      color: var(--muted);
-    }
-    pre{
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: rgba(0,0,0,.22);
-      border: 1px solid var(--line);
-      padding: 10px;
-      border-radius: 12px;
-      margin: 10px 0 0;
-      font-size: 12px;
-      color: rgba(255,255,255,.88);
-    }
-    /* ---- PET BOX (питомец внутри карточки) ---- */
-    .petBox{
-      display:flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-
-      /* чтобы визуально был “бокс” */
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      padding: 14px;
-
-      /* важное: внутри карточки не вылезает */
-      overflow: hidden;
-
-      margin-top: 12px;
-    }
-
-    /* картинка питомца: контролируем размер */
-    #petImg{
-      width: min(320px, 85vw);     /* можешь увеличить 320 -> 360/420 */
-      height: auto;
-      display:block;
-      image-rendering: auto;
-
-      /* если картинка с прозрачностью — выглядит аккуратнее */
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
-    }
-
-    /* подпись состояния */
-    #visualLabel{
-      font-size: 13px;
-      color: rgba(255,255,255,.72);
-    }
-    /* --- PET animation / FX layer --- */
-    .petBox{ position: relative; }
-
-    #petImg{
-      transition: transform .18s ease, filter .18s ease, opacity .18s ease;
-      will-change: transform, opacity;
-    }
-
-    /* лёгкое "дыхание" всегда */
-    #petImg.idle-breathe{
-      animation: breathe 2.2s ease-in-out infinite;
-    }
-    @keyframes breathe{
-      0%,100%{ transform: translateY(0) scale(1); }
-      50%{ transform: translateY(-4px) scale(1.01); }
-    }
-
-    /* слой эффектов поверх питомца */
-    #petFx{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      overflow:hidden;
-    }
-
-    /* простая частица (сердце/звезда/эмодзи) */
-    .fxPop{
-      position:absolute;
-      left:50%;
-      top:35%;
-      transform: translate(-50%, -50%);
-      font-size: 28px;
-      animation: pop 900ms ease-out forwards;
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,.25));
-    }
-    @keyframes pop{
-      0%{ opacity:0; transform: translate(-50%,-50%) scale(.7); }
-      15%{ opacity:1; }
-      100%{ opacity:0; transform: translate(-50%,-120%) scale(1.15); }
-    }
     html, body { height: 100%; }
+
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background: #070b16;
-      color: white;
+      color: #fff;
       overflow: hidden;
     }
 
@@ -303,242 +24,84 @@
       flex-direction: column;
     }
 
+    /* ---------- TOP HUD ---------- */
     .hudTop{
-      padding: 10px 12px calc(8px + env(safe-area-inset-top));
+      padding: 10px 12px calc(6px + env(safe-area-inset-top));
       display:flex;
-      align-items:flex-start;
+      align-items:center;
       justify-content: space-between;
       gap: 10px;
     }
 
-    .title{
-      font-weight: 800;
-      letter-spacing: .2px;
-    }
-
-    .status{
-      font-size: 12px;
-      color: rgba(255,255,255,.7);
-      margin-top: 4px;
-      line-height: 1.2;
-    }
-
-    .pill{
-      font-size: 12px;
-      color: rgba(255,255,255,.85);
-      background: rgba(255,255,255,.08);
+    .hudLvl{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap: 10px;
       padding: 8px 10px;
-      border-radius: 999px;
+      border-radius: 16px;
       border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
       backdrop-filter: blur(10px);
+      min-width: 0;
     }
 
-    .pillBtn{
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.08);
-      color: white;
-      border-radius: 12px;
+    .lvlBadge{
+      font-weight: 900;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      white-space: nowrap;
+    }
+
+    .xpBar{
+      flex:1;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.08);
+      overflow:hidden;
+    }
+    .xpFill{
+      height:100%;
+      width:0%;
+      border-radius: 999px;
+      background: rgba(255,255,255,.85);
+      transition: width .25s ease;
+    }
+
+    .hudCoins{
+      display:flex;
+      align-items:center;
+      gap: 8px;
       padding: 10px 12px;
-      cursor:pointer;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
       backdrop-filter: blur(10px);
+      font-weight: 900;
+      white-space: nowrap;
     }
+    .coinIcon{ font-size: 18px; }
 
-    .hudRight{
-      display:flex;
-      align-items:center;
-      gap: 8px;
-    }
+    /* ---------- SCENE ---------- */
+    .sceneWrap{ flex:1; display:flex; padding: 0 10px; }
 
-    .sceneWrap{
-      flex: 1;
-      display:flex;
-      padding: 0 12px;
-    }
-
-    .scene{
-      flex: 1;
-      border-radius: 22px;
-      border: 1px solid rgba(255,255,255,.10);
-      overflow:hidden;
-      position: relative;
-      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.10), transparent 55%),
-                  linear-gradient(135deg, #1f2937, #0b1226);
-    }
-
-    .petStage{
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    .petBox{
-      position: relative;
-      display:flex;
-      flex-direction: column;
-      align-items:center;
-      gap: 10px;
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(0,0,0,.10);
-      border: 1px solid rgba(255,255,255,.10);
-      backdrop-filter: blur(6px);
-    }
-
-    #petImg{
-      width: min(360px, 88vw);
-      height:auto;
-      display:block;
-      filter: drop-shadow(0 18px 24px rgba(0,0,0,.45));
-    }
-
-    .visualLabel{
-      font-size: 12px;
-      color: rgba(255,255,255,.8);
-    }
-
-    .hudStats{
-      padding: 10px 12px 6px;
-    }
-
-    .player{
-      font-size: 13px;
-      color: rgba(255,255,255,.85);
-      font-weight: 650;
-      margin-bottom: 8px;
-    }
-
-    .statLine{
-      display:flex;
-      align-items:center;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .bar{
-      flex:1;
-      height: 12px;
-      background: rgba(255,255,255,.08);
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,.10);
-    }
-
-    .fill{
-      height: 100%;
-      width: 0%;
-      transition: width 0.25s ease;
-    }
-
-    .hudRooms{
-      padding: 0 12px 10px;
-    }
-
-    .tabs{ display:flex; gap: 8px; flex-wrap: wrap; }
-    .tab{
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      color: rgba(255,255,255,.75);
-      font-size: 12px;
-      cursor:pointer;
-    }
-    .tab.active{
-      background: rgba(255,255,255,.16);
-      color: #fff;
-    }
-
-    .actionBar{
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-      border-top: 1px solid rgba(255,255,255,.10);
-      background: rgba(7,11,22,.75);
-      backdrop-filter: blur(12px);
-    }
-
-    .actionBtns{
-      display:flex;
-      gap: 10px;
-      justify-content: space-between;
-    }
-
-    .actionBtns button{
-      flex: 1;
-      border-radius: 14px;
-      border: 0;
-      padding: 12px 10px;
-      font-weight: 800;
-      background: #e2e8f0;
-      color: #0b1226;
-      cursor:pointer;
-    }
-
-    .actionBtns button:disabled{ opacity:.55; cursor:not-allowed; }
-
-    .overlay{
-      position: fixed;
-      inset:0;
-      background: rgba(0,0,0,.55);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 14px;
-      z-index: 50;
-    }
-
-    .modal{
-      width: min(520px, 92vw);
-      background: rgba(20,28,50,.92);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 18px;
-      padding: 14px;
-      backdrop-filter: blur(14px);
-    }
-
-    .mainBtn{
-      border-radius: 14px;
-      border: 0;
-      padding: 12px 10px;
-      font-weight: 800;
-      background: #e2e8f0;
-      color: #0b1226;
-      cursor:pointer;
-    }
-
-    .hint{
-      font-size: 12px;
-      color: rgba(255,255,255,.65);
-      line-height: 1.25;
-    }
-
-    .debug{
-      position: fixed;
-      left: 12px;
-      bottom: 80px;
-      z-index: 60;
-      max-width: 92vw;
-    }
-    pre{
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: rgba(0,0,0,.35);
-      border: 1px solid rgba(255,255,255,.10);
-      padding: 10px;
-      border-radius: 12px;
-      margin: 10px 0 0;
-      font-size: 12px;
-      color: rgba(255,255,255,.88);
-    }
-        /* --- Scene takes most space --- */
-    .sceneWrap{ flex: 1; display:flex; padding: 0 10px; }
     .scene{
       flex:1;
       border-radius: 22px;
       border: 1px solid rgba(255,255,255,.10);
       overflow:hidden;
       position: relative;
+      transition: background .25s ease;
     }
+
+    .scene--kitchen{ background: linear-gradient(135deg, #1f2937, #0b1226); }
+    .scene--bedroom{ background: linear-gradient(135deg, #312e81, #0b1226); }
+    .scene--bathroom{ background: linear-gradient(135deg, #0e7490, #0b1226); }
+    .scene--playroom{ background: linear-gradient(135deg, #7c2d12, #0b1226); }
 
     /* stats over pet */
     .statsOver{
@@ -601,28 +164,86 @@
       width:0%;
       border-radius: 999px;
       transition: width .25s ease;
+      background: rgba(255,255,255,.85);
     }
 
-    /* pet bigger */
+    /* pet center */
     .petStage{
       position:absolute;
       inset:0;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding-top: 36px; /* чтобы не залезать на статы */
+      padding-top: 38px;
     }
+
+    .petBox{
+      position: relative;
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(0,0,0,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(6px);
+      overflow:hidden;
+    }
+
+    /* питомец БОЛЬШОЙ */
     #petImg{
-      width: min(420px, 96vw);
-      height:auto;
+      width: min(520px, 96vw);
+      height: auto;
+      display:block;
+      filter: drop-shadow(0 18px 24px rgba(0,0,0,.45));
+      will-change: transform, opacity;
     }
 
-    /* rooms icon bar */
-    .hudRooms{
-      padding: 10px 12px 8px;
+    #petImg.idle-breathe{
+      animation: breathe 2.2s ease-in-out infinite;
+    }
+    @keyframes breathe{
+      0%,100%{ transform: translateY(0) scale(1); }
+      50%{ transform: translateY(-4px) scale(1.01); }
     }
 
-    .tabs{ display:flex; gap: 10px; justify-content: space-between; }
+    .visualLabel{
+      font-size: 12px;
+      color: rgba(255,255,255,.8);
+    }
+
+    #petFx{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      overflow:hidden;
+    }
+
+    .fxPop{
+      position:absolute;
+      left:50%;
+      top:35%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      animation: pop 900ms ease-out forwards;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.25));
+    }
+    @keyframes pop{
+      0%{ opacity:0; transform: translate(-50%,-50%) scale(.7); }
+      15%{ opacity:1; }
+      100%{ opacity:0; transform: translate(-50%,-120%) scale(1.15); }
+    }
+
+    /* ---------- BOTTOM ROOMS + ACTIONS ---------- */
+    .hudRooms{ padding: 10px 12px 8px; }
+
+    .tabs{
+      display:flex;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
     .tab{
       flex: 1;
       display:flex;
@@ -633,82 +254,95 @@
       background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.10);
       color: rgba(255,255,255,.85);
-      font-size: 20px; /* крупная иконка */
+      font-size: 20px;
+      cursor:pointer;
+      user-select:none;
     }
     .tab.active{
       background: rgba(255,255,255,.18);
       border-color: rgba(255,255,255,.22);
     }
 
-    /* actions bar stays below rooms */
     .actionBar{
       padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-    }
-        /* --- TOP HUD (game-like) --- */
-    .hudTop{
-      padding: 10px 12px calc(6px + env(safe-area-inset-top));
+      border-top: 1px solid rgba(255,255,255,.10);
+      background: rgba(7,11,22,.75);
+      backdrop-filter: blur(12px);
     }
 
-    .hudTopRow{
+    .actionBtns{
+      display:flex;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
+    .actionBtns button{
+      flex: 1;
+      border-radius: 14px;
+      border: 0;
+      padding: 12px 10px;
+      font-weight: 800;
+      background: #e2e8f0;
+      color: #0b1226;
+      cursor:pointer;
+    }
+    .actionBtns button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    /* ---------- overlays ---------- */
+    .overlay{
+      position: fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 14px;
+      z-index: 50;
+    }
+
+    .modal{
+      width: min(520px, 92vw);
+      background: rgba(20,28,50,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      padding: 14px;
+      backdrop-filter: blur(14px);
+    }
+
+    .pillBtn{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08);
+      color: white;
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor:pointer;
+      backdrop-filter: blur(10px);
+    }
+
+    .mainBtn{
+      border-radius: 14px;
+      border: 0;
+      padding: 12px 10px;
+      font-weight: 800;
+      background: #e2e8f0;
+      color: #0b1226;
+      cursor:pointer;
+    }
+
+    .hint{
+      font-size: 12px;
+      color: rgba(255,255,255,.65);
+      line-height: 1.25;
+    }
+
+    .row{
       display:flex;
       align-items:center;
       justify-content: space-between;
       gap: 10px;
     }
 
-    .hudLvl{
-      flex:1;
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.16);
-      backdrop-filter: blur(10px);
-    }
-
-    .lvlBadge{
-      font-weight: 900;
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.10);
-    }
-
-    .xpBar{
-      flex:1;
-      height: 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.08);
-      overflow:hidden;
-    }
-
-    .xpFill{
-      height:100%;
-      width:0%;
-      border-radius: 999px;
-      background: rgba(255,255,255,.85);
-      transition: width .25s ease;
-    }
-
-    .hudCoins{
-      display:flex;
-      align-items:center;
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.16);
-      backdrop-filter: blur(10px);
-      font-weight: 900;
-    }
-
-    .coinIcon{ font-size: 18px; }
-
-    /* --- Toast for short messages --- */
+    /* toast */
     .toast{
       position: fixed;
       left: 50%;
@@ -716,7 +350,6 @@
       transform: translateX(-50%);
       z-index: 80;
       max-width: 92vw;
-
       padding: 10px 12px;
       border-radius: 14px;
       border: 1px solid rgba(255,255,255,.12);
@@ -724,6 +357,27 @@
       backdrop-filter: blur(12px);
       color: rgba(255,255,255,.92);
       font-size: 12px;
+      display:none;
+    }
+
+    details.debug{
+      position: fixed;
+      left: 12px;
+      bottom: 80px;
+      z-index: 60;
+      max-width: 92vw;
+      color: rgba(255,255,255,.75);
+    }
+    pre{
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.10);
+      padding: 10px;
+      border-radius: 12px;
+      margin: 10px 0 0;
+      font-size: 12px;
+      color: rgba(255,255,255,.88);
     }
   </style>
 </head>
@@ -733,27 +387,27 @@
 
     <!-- TOP HUD -->
     <div class="hudTop">
-    <div class="hudTop">
-      <div class="hudLeft">
-        <div class="title">🐾 Тамагочи</div>
-        <div id="status" class="status">loading...</div>
+      <div class="hudLvl">
+        <div class="lvlBadge">Lv <span id="lvlNum">1</span></div>
+        <div class="xpBar"><div id="xpFill" class="xpFill"></div></div>
       </div>
-      <div class="hudRight">
-        <div id="levelInfo" class="pill">...</div>
-        <button id="dailyBtn" class="pillBtn" type="button">🎁</button>
+
+      <div class="hudCoins">
+        <span class="coinIcon">🪙</span>
+        <span id="coinsNum">0</span>
       </div>
     </div>
+
+    <div id="toast" class="toast"></div>
 
     <!-- SCENE -->
     <div class="sceneWrap">
       <div class="scene scene--kitchen" id="scene">
 
-        <!-- STATS OVER PET -->
         <div class="statsOver">
           <div class="playerRow">
             <div id="petName" class="player">Игрок: —</div>
           </div>
-
           <div class="statPills">
             <div class="pillStat"><span>🍔</span><div class="miniBar"><div id="hungerBar" class="miniFill"></div></div></div>
             <div class="pillStat"><span>😊</span><div class="miniBar"><div id="moodBar" class="miniFill"></div></div></div>
@@ -762,7 +416,6 @@
           </div>
         </div>
 
-        <!-- PET CENTER -->
         <div class="petStage">
           <div class="petBox">
             <img id="petImg" src="./assets/mid.jpg" alt="pet" />
@@ -774,22 +427,21 @@
       </div>
     </div>
 
-
-    <!-- ROOMS (as chips) -->
+    <!-- ROOMS -->
     <div class="hudRooms">
       <div class="tabs" id="roomTabs"></div>
     </div>
 
-    <!-- BOTTOM ACTION BAR -->
+    <!-- ACTIONS -->
     <div class="actionBar">
       <div id="actions" class="actionBtns"></div>
     </div>
 
-    <!-- FOOD SCREEN overlay (оставь как у тебя, но поверх) -->
+    <!-- FOOD overlay -->
     <div class="overlay" id="foodScreen" style="display:none;">
       <div class="modal">
         <div class="row" style="margin-bottom:10px;">
-          <div style="font-weight:650;">🍽️ Выбор еды</div>
+          <div style="font-weight:800;">🍽️ Выбор еды</div>
           <button id="foodExitBtn" type="button" class="pillBtn">✖</button>
         </div>
 
@@ -798,7 +450,7 @@
 
           <div style="flex:1; text-align:center;">
             <div id="foodEmoji" style="font-size:64px; line-height:1;">🍎</div>
-            <div id="foodName" style="margin-top:6px; font-weight:650;">—</div>
+            <div id="foodName" style="margin-top:6px; font-weight:800;">—</div>
             <div id="foodDesc" style="margin-top:4px; color: rgba(255,255,255,.72); font-size:12px;">—</div>
             <div id="foodMeta" style="margin-top:6px; color: rgba(255,255,255,.72); font-size:12px;">Цена: — • В наличии: —</div>
           </div>
@@ -809,11 +461,10 @@
         <div style="display:flex; gap:10px; margin-top:12px;">
           <button id="foodFeedBtn" type="button" class="mainBtn" style="flex:1;">—</button>
         </div>
-
-        <div class="hint" id="dailyHint" style="margin-top:10px;">Можно получить 1 раз в сутки.</div>
       </div>
     </div>
 
+    <!-- DAILY popup -->
     <div class="overlay" id="dailyPopup" style="display:none;">
       <div class="modal">
         <div class="row" style="margin-bottom:10px;">
@@ -825,7 +476,7 @@
           Забери монеты один раз в сутки.
         </div>
 
-        <button id="dailyClaimBtn" type="button" class="mainBtn" style="width:100%;">Получить +25</button>
+        <button id="dailyClaimBtn" type="button" class="mainBtn" style="width:100%;">Получить</button>
 
         <div id="dailyPopupHint" class="hint" style="margin-top:10px;">—</div>
       </div>
