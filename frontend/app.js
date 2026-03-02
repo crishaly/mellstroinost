@@ -18,10 +18,19 @@ const actionsEl = document.getElementById("actions");
 const roomTabsEl = document.getElementById("roomTabs");
 
 const debugEl = document.getElementById("debug");
+const foodScreenEl = document.getElementById("foodScreen");
+const foodPrevBtn = document.getElementById("foodPrevBtn");
+const foodNextBtn = document.getElementById("foodNextBtn");
+const foodExitBtn = document.getElementById("foodExitBtn");
+const foodFeedBtn = document.getElementById("foodFeedBtn");
+const foodEmojiEl = document.getElementById("foodEmoji");
+const foodNameEl = document.getElementById("foodName");
+const foodDescEl = document.getElementById("foodDesc");
 
 let token = null;
 let currentRoom = "kitchen";
 let isBusy = false;
+let mode = "main"; // "main" | "food"
 
 const ROOMS = [
   { id: "kitchen", label: "🍽️ Кухня" },
@@ -45,6 +54,15 @@ const ACTIONS_BY_ROOM = {
     ["pet", "🖐️ Погладить"],
   ],
 };
+
+const FOODS = [
+  { id: "apple", emoji: "🍎", name: "Яблоко", desc: "+10 голод" },
+  { id: "pizza", emoji: "🍕", name: "Пицца", desc: "+20 голод" },
+  { id: "fish",  emoji: "🐟", name: "Рыбка",  desc: "+15 голод, +5 настроение" },
+  { id: "cake",  emoji: "🍰", name: "Тортик", desc: "+10 голод, +10 настроение" },
+];
+
+let foodIndex = 0;
 
 function setStatus(text) {
   if (statusEl) statusEl.textContent = text;
@@ -201,6 +219,10 @@ function renderActions() {
     b.textContent = label;
     b.onclick = async () => {
       try {
+        if (type === "feed") {
+          openFoodMenu();
+          return;
+        }
         await doAction(type);
       } catch (e) {
         setStatus("Ошибка: " + e.message);
@@ -209,6 +231,53 @@ function renderActions() {
     actionsEl.appendChild(b);
   });
 }
+setMode("main");
+
+function setMode(next) {
+  mode = next;
+
+  // main UI
+  if (actionsEl) actionsEl.parentElement.style.display = (mode === "main") ? "" : "none";
+  if (roomTabsEl) roomTabsEl.parentElement.style.display = (mode === "main") ? "" : "none";
+
+  // food UI
+  if (foodScreenEl) foodScreenEl.style.display = (mode === "food") ? "" : "none";
+}
+
+function renderFood() {
+  const item = FOODS[foodIndex] || FOODS[0];
+  if (!item) return;
+
+  if (foodEmojiEl) foodEmojiEl.textContent = item.emoji;
+  if (foodNameEl) foodNameEl.textContent = item.name;
+  if (foodDescEl) foodDescEl.textContent = item.desc;
+}
+
+function openFoodMenu() {
+  currentRoom = "kitchen"; // логично: кормление только в кухне
+  renderRooms();
+  setMode("food");
+  renderFood();
+}
+
+function closeFoodMenu() {
+  setMode("main");
+}
+// food menu buttons
+if (foodPrevBtn) foodPrevBtn.onclick = () => { if (!isBusy) { foodIndex = (foodIndex - 1 + FOODS.length) % FOODS.length; renderFood(); } };
+if (foodNextBtn) foodNextBtn.onclick = () => { if (!isBusy) { foodIndex = (foodIndex + 1) % FOODS.length; renderFood(); } };
+if (foodExitBtn) foodExitBtn.onclick = () => { if (!isBusy) closeFoodMenu(); };
+
+if (foodFeedBtn) foodFeedBtn.onclick = async () => {
+  if (isBusy) return;
+  // пока MVP: любое блюдо = action "feed"
+  try {
+    await doAction("feed");
+    closeFoodMenu();
+  } catch (e) {
+    // doAction уже ставит статус
+  }
+};
 
 // Текст для состояния эмоции питомца
 function moodText(moodState) {

@@ -239,10 +239,41 @@
       <div id="actions"></div>
     </div>
 
+    <div class="card" id="foodScreen" style="display:none;">
+      <div class="row" style="margin-bottom:10px;">
+        <div style="font-weight:650;">🍽️ Выбор еды</div>
+        <button id="foodExitBtn" type="button">✖</button>
+      </div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <button id="foodPrevBtn" type="button">←</button>
+
+        <div style="flex:1; text-align:center;">
+          <div id="foodEmoji" style="font-size:64px; line-height:1;">🍎</div>
+          <div id="foodName" style="margin-top:6px; font-weight:650;">Яблоко</div>
+          <div id="foodDesc" style="margin-top:4px; color: rgba(255,255,255,.72); font-size:12px;">
+            +10 голод
+          </div>
+        </div>
+
+        <button id="foodNextBtn" type="button">→</button>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button id="foodFeedBtn" type="button" style="flex:1;">🍔 Покормить</button>
+      </div>
+
+      <div class="hint">
+        Пока это MVP: выбор еды визуальный, действие одно — <b>feed</b>. Потом подключим магазин/инвентарь.
+      </div>
+    </div>
+
     <details id="debugWrap">
       <summary>Debug</summary>
       <pre id="debug"></pre>
     </details>
+
+    
 
     <script src="./app.js"></script>
   </div>
