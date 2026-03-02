@@ -29,7 +29,7 @@ const foodDescEl = document.getElementById("foodDesc");
 const foodMetaEl = document.getElementById("foodMeta");
 const dailyBtn = document.getElementById("dailyBtn");
 const dailyHint = document.getElementById("dailyHint");
-
+const petFxEl = document.getElementById("petFx");
 
 let token = null;
 let currentRoom = "kitchen";
@@ -88,45 +88,47 @@ function setBusy(v) {
     dailyBtn.disabled = true;
   }
 }
+function fxPop(emoji) {
+  if (!petFxEl) return;
+  const el = document.createElement("div");
+  el.className = "fxPop";
+  el.textContent = emoji;
+  petFxEl.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
 
 function renderPetImage(me) {
   if (!petImgEl) return;
 
-  // Получаем визуальное состояние питомца (по умолчанию "mid")
-  const vs = me.visualState || "mid";  // Если visualState не найден, ставим "mid" по умолчанию
+  const vs = me.visualState || "mid";
 
-  console.log(`Питомец находится в состоянии: ${vs}`);  // Логируем состояние питомца для отладки
-
-  // Карты для состояний (bad, mid, good)
+  // ⭐ маппинг: good -> happy.gif (анимация), остальное jpg
   const srcMap = {
-    bad: "./assets/bad.jpg",   // Картинка для плохого состояния
-    mid: "./assets/mid.jpg",   // Картинка для среднего состояния
-    good: "./assets/happy.jpg", // Картинка для хорошего состояния
+    bad: "./assets/bad.jpg",
+    mid: "./assets/mid.jpg",
+    good: "./assets/happy.gif", // <- твой gif
   };
 
-  // Логируем путь к изображению
-  console.log(`Устанавливаем картинку: ${srcMap[vs] || srcMap.mid}`); // Логируем путь к картинке
-
-  // Устанавливаем картинку в зависимости от состояния питомца
-  petImgEl.src = srcMap[vs] || srcMap.mid;  // Если состояние не найдено, по умолчанию будет mid.jpg
-
-  // Проверяем, загрузилась ли картинка
-  petImgEl.onload = () => {
-    console.log("Картинка успешно загружена!");
+  const labelMap = {
+    bad: "😵 Плохое",
+    mid: "😐 Среднее",
+    good: "😄 Хорошее",
   };
 
-  petImgEl.onerror = () => {
-    console.error("Ошибка загрузки картинки: ", srcMap[vs]);
-  };
+  const nextSrc = srcMap[vs] || srcMap.mid;
 
-  // Обновляем текстовое описание состояния питомца
+  // "дыхание" включаем всегда (не мешает gif)
+  petImgEl.classList.add("idle-breathe");
+
+  // меняем src только если реально изменился (чтобы gif не перезагружался постоянно)
+  const cur = petImgEl.getAttribute("data-src") || "";
+  if (cur !== nextSrc) {
+    petImgEl.setAttribute("data-src", nextSrc);
+    petImgEl.src = nextSrc;
+  }
+
   if (visualLabelEl) {
-    const labelMap = {
-      bad: "😵 Плохое",
-      mid: "😐 Среднее",
-      good: "😄 Хорошее",
-    };
-    visualLabelEl.textContent = `Состояние: ${labelMap[vs] || "—"}`;  // Отображаем описание состояния питомца
+    visualLabelEl.textContent = `Состояние: ${labelMap[vs] || "—"}`;
   }
 }
 
@@ -253,6 +255,7 @@ async function loadMe() {
 
   renderPetImage(me);
   render(me);
+  runIdleFxIfNeeded(me);
 
   // если мы на экране еды — перерендерим мету еды (qty/price)
   if (mode === "food") renderFood();
@@ -436,6 +439,38 @@ function moodText(moodState) {
     default: return "—";
   }
 }
+let lastUserInteractionAt = Date.now();
+let lastIdleFxAt = 0;
+
+function markInteraction() {
+  lastUserInteractionAt = Date.now();
+}
+
+function idleEmojiByMood(moodState) {
+  switch (moodState) {
+    case "hungry": return "🍔";
+    case "dirty": return "🧼";
+    case "tired": return "⚡";
+    case "sad": return "😢";
+    case "happy": return "💖";
+    case "sleeping": return "💤";
+    default: return "✨";
+  }
+}
+
+function runIdleFxIfNeeded(me) {
+  const now = Date.now();
+  const idleFor = now - lastUserInteractionAt;
+
+  // если игрок ничего не делал 25+ секунд
+  if (idleFor < 25000) return;
+
+  // не чаще чем раз в 18 секунд
+  if (now - lastIdleFxAt < 18000) return;
+
+  lastIdleFxAt = now;
+  fxPop(idleEmojiByMood(me.moodState));
+}
 
 // Функция для рендеринга информации о пользователе и питомце
 function renderMe(me) {
@@ -476,6 +511,7 @@ function renderMe(me) {
 // Функция для выполнения действия с питомцем
 // Функция для выполнения действия с питомцем (например, кормление)
 async function doAction(type) {
+  markInteraction();
   setBusy(true);
   setStatus("Действие...");
 
