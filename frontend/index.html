@@ -644,6 +644,87 @@
     .actionBar{
       padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
     }
+        /* --- TOP HUD (game-like) --- */
+    .hudTop{
+      padding: 10px 12px calc(6px + env(safe-area-inset-top));
+    }
+
+    .hudTopRow{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .hudLvl{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      backdrop-filter: blur(10px);
+    }
+
+    .lvlBadge{
+      font-weight: 900;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .xpBar{
+      flex:1;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.08);
+      overflow:hidden;
+    }
+
+    .xpFill{
+      height:100%;
+      width:0%;
+      border-radius: 999px;
+      background: rgba(255,255,255,.85);
+      transition: width .25s ease;
+    }
+
+    .hudCoins{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      backdrop-filter: blur(10px);
+      font-weight: 900;
+    }
+
+    .coinIcon{ font-size: 18px; }
+
+    /* --- Toast for short messages --- */
+    .toast{
+      position: fixed;
+      left: 50%;
+      top: calc(12px + env(safe-area-inset-top));
+      transform: translateX(-50%);
+      z-index: 80;
+      max-width: 92vw;
+
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      color: rgba(255,255,255,.92);
+      font-size: 12px;
+    }
   </style>
 </head>
 
@@ -652,12 +733,13 @@
 
     <!-- TOP HUD -->
     <div class="hudTop">
+    <div class="hudTop">
       <div class="hudLeft">
         <div class="title">🐾 Тамагочи</div>
         <div id="status" class="status">loading...</div>
       </div>
       <div class="hudRight">
-        <div id="levelInfo" class="pill">Уровень: — | XP: — | Монеты: —</div>
+        <div id="levelInfo" class="pill">...</div>
         <button id="dailyBtn" class="pillBtn" type="button">🎁</button>
       </div>
     </div>
@@ -729,6 +811,23 @@
         </div>
 
         <div class="hint" id="dailyHint" style="margin-top:10px;">Можно получить 1 раз в сутки.</div>
+      </div>
+    </div>
+
+    <div class="overlay" id="dailyPopup" style="display:none;">
+      <div class="modal">
+        <div class="row" style="margin-bottom:10px;">
+          <div style="font-weight:800;">🎁 Ежедневная награда</div>
+          <button id="dailyCloseBtn" type="button" class="pillBtn">✖</button>
+        </div>
+
+        <div class="hint" style="margin-bottom:12px;">
+          Забери монеты один раз в сутки.
+        </div>
+
+        <button id="dailyClaimBtn" type="button" class="mainBtn" style="width:100%;">Получить +25</button>
+
+        <div id="dailyPopupHint" class="hint" style="margin-top:10px;">—</div>
       </div>
     </div>
 

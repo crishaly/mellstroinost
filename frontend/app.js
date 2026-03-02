@@ -30,7 +30,15 @@ const foodMetaEl = document.getElementById("foodMeta");
 const dailyBtn = document.getElementById("dailyBtn");
 const dailyHint = document.getElementById("dailyHint");
 const petFxEl = document.getElementById("petFx");
+const toastEl = document.getElementById("toast");
+const lvlNumEl = document.getElementById("lvlNum");
+const xpFillEl = document.getElementById("xpFill");
+const coinsNumEl = document.getElementById("coinsNum");
 
+const dailyPopupEl = document.getElementById("dailyPopup");
+const dailyCloseBtn = document.getElementById("dailyCloseBtn");
+const dailyClaimBtn = document.getElementById("dailyClaimBtn");
+const dailyPopupHintEl = document.getElementById("dailyPopupHint");
 let token = null;
 let currentRoom = "kitchen";
 let isBusy = false;
@@ -71,8 +79,19 @@ const FOODS = [
 
 let foodIndex = 0;
 
+let toastTimer = null;
+
 function setStatus(text) {
-  if (statusEl) statusEl.textContent = text;
+  if (!toastEl) return;
+  if (!text) return;
+
+  toastEl.textContent = text;
+  toastEl.style.display = "block";
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toastEl.style.display = "none";
+  }, 2200);
 }
 
 function setBusy(v) {
@@ -238,6 +257,7 @@ async function loadMe() {
 
   meCache = me;
   rebuildInventoryMap(me.inventory);
+  maybeShowDailyPopup(me);
 
   // daily UI
   if (dailyBtn) {
@@ -250,9 +270,7 @@ async function loadMe() {
       ? "Уже получено сегодня. Приходи завтра 🙂"
       : "Можно получить 1 раз в сутки.";
   }
-
-  setStatus(`Привет, ${me.user.first_name}!`);
-
+  
   renderPetImage(me);
   render(me);
   runIdleFxIfNeeded(me);
@@ -408,6 +426,42 @@ if (foodFeedBtn) foodFeedBtn.onclick = async () => {
       // ✅ использовать из инвентаря
       await postJson(`${API}/food/use`, { itemId: uiItem.id }, token);
       await loadMe();
+          if (dailyCloseBtn) {
+      dailyCloseBtn.onclick = () => {
+        if (dailyPopupEl) dailyPopupEl.style.display = "none";
+      };
+    }
+
+    if (dailyClaimBtn) {
+      dailyClaimBtn.onclick = async () => {
+        if (isBusy) return;
+        try {
+          setBusy(true);
+          const r = await postJson(`${API}/daily/claim`, {}, token);
+          if (dailyPopupHintEl) dailyPopupHintEl.textContent = `Получено: +${r.reward} монет`;
+          await loadMe();
+          setStatus(`🎁 +${r.reward} монет`);
+
+          // закрыть попап через секунду
+          setTimeout(() => {
+            if (dailyPopupEl) dailyPopupEl.style.display = "none";
+          }, 900);
+        } catch (e) {
+          const msg = String(e.message || e);
+          if (msg.includes("already claimed")) {
+            if (dailyPopupHintEl) dailyPopupHintEl.textContent = "Уже получено сегодня 🙂";
+            setTimeout(() => {
+              if (dailyPopupEl) dailyPopupEl.style.display = "none";
+            }, 700);
+            return;
+          }
+          if (dailyPopupHintEl) dailyPopupHintEl.textContent = "Ошибка: " + msg;
+          setStatus("Ошибка: " + msg);
+        } finally {
+          setBusy(false);
+        }
+      };
+    }
       setStatus(`Ок: использовано ${uiItem.name}`);
       closeFoodMenu();
       return;
@@ -460,6 +514,26 @@ function idleEmojiByMood(moodState) {
     default: return "✨";
   }
 }
+function todayKeyUTC() {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`;
+}
+
+function maybeShowDailyPopup(me) {
+  if (!dailyPopupEl) return;
+
+  // если уже забрали — не показываем
+  if (me.dailyClaimedToday) return;
+
+  // показываем только 1 раз в сутки на устройстве
+  const key = "daily_popup_shown_" + todayKeyUTC();
+  if (localStorage.getItem(key) === "1") return;
+
+  localStorage.setItem(key, "1");
+  dailyPopupEl.style.display = "flex";
+
+  if (dailyPopupHintEl) dailyPopupHintEl.textContent = "Забери награду и продолжай играть 🙂";
+}
 
 function runIdleFxIfNeeded(me) {
   const now = Date.now();
@@ -485,13 +559,17 @@ function renderMe(me) {
   }
 
   // Уровень / XP / Монеты
-  if (levelInfoEl) {
-    const lvl = user?.level ?? 1;
-    const xp = user?.xp ?? 0;
-    const coins = user?.coins ?? 0;
-    const threshold = (lvl || 1) * 50;
-    levelInfoEl.textContent = `Уровень: ${lvl} | XP: ${xp}/${threshold} | Монеты: ${coins}`;
-  }
+  // Level + XP bar + coins (новый HUD)
+  const lvl = user?.level ?? 1;
+  const xp = user?.xp ?? 0;
+  const coins = user?.coins ?? 0;
+  const threshold = (lvl || 1) * 50;
+
+  if (lvlNumEl) lvlNumEl.textContent = String(lvl);
+  if (coinsNumEl) coinsNumEl.textContent = String(coins);
+
+  const pct = threshold > 0 ? Math.max(0, Math.min(1, xp / threshold)) : 0;
+  if (xpFillEl) xpFillEl.style.width = Math.round(pct * 100) + "%";
 
   // Обновляем бары для голода, настроения, энергии и чистоты
   setBar(hungerBar, pet?.hunger);
