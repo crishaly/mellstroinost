@@ -108,6 +108,33 @@ function applyXp(user, pet) {
     threshold = user.level * 50;
   }
 }
+function isSameUtcDay(aIso, bIso) {
+  if (!aIso || !bIso) return false;
+  const a = new Date(aIso);
+  const b = new Date(bIso);
+  return a.getUTCFullYear() === b.getUTCFullYear()
+    && a.getUTCMonth() === b.getUTCMonth()
+    && a.getUTCDate() === b.getUTCDate();
+}
+
+function coinsForAction(type, petAfter) {
+  // базовые монеты за действие
+  const baseMap = {
+    feed: 2,
+    clean: 2,
+    pet: 1,
+    sleep: 0,
+    wake: 0,
+  };
+  let coins = baseMap[type] ?? 0;
+
+  // бонус за “хороший уход”
+  // если после действия среднее >= 80 → +1 монета
+  const avg = computeAvgStat(petAfter);
+  if (avg >= 80 && (type === "feed" || type === "clean" || type === "pet")) coins += 1;
+
+  return coins;
+}
 
 // -------------------- migrations (safe) --------------------
 function ensureTablesAndColumns() {
@@ -134,8 +161,8 @@ function ensureTablesAndColumns() {
   try { db.prepare(`ALTER TABLE users ADD COLUMN coins INTEGER NOT NULL DEFAULT 0`).run(); } catch {}
   try { db.prepare(`ALTER TABLE users ADD COLUMN level INTEGER NOT NULL DEFAULT 1`).run(); } catch {}
   try { db.prepare(`ALTER TABLE users ADD COLUMN xp INTEGER NOT NULL DEFAULT 0`).run(); } catch {}
-
   try { db.prepare(`ALTER TABLE pets ADD COLUMN last_action_at TEXT`).run(); } catch {}
+  try { db.prepare(`ALTER TABLE users ADD COLUMN daily_claimed_at TEXT`).run(); } catch {}
 }
 
 ensureTablesAndColumns();
@@ -231,8 +258,32 @@ app.get("/me", requireAuth, (req, res) => {
   const visualState = computeVisualState(avgStat);
 
   const inventory = safeGetInventory(telegramId);
+  const dailyClaimedToday = isSameUtcDay(user.daily_claimed_at, nowIso());
+  res.json({ user, pet, moodState, avgStat, visualState, inventory, dailyClaimedToday});
+});
 
-  res.json({ user, pet, moodState, avgStat, visualState, inventory });
+app.post("/daily/claim", requireAuth, (req, res) => {
+  const telegramId = req.telegramId;
+
+  const user = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
+  if (!user) return res.status(404).json({ error: "user not found" });
+
+  const now = nowIso();
+  if (isSameUtcDay(user.daily_claimed_at, now)) {
+    return res.status(400).json({ error: "already claimed" });
+  }
+
+  // награда — можно менять
+  const reward = 25;
+
+  db.prepare(`
+    UPDATE users
+    SET coins=?, daily_claimed_at=?, last_seen_at=?
+    WHERE telegram_id=?
+  `).run((user.coins ?? 0) + reward, now, now, telegramId);
+
+  const updated = db.prepare(`SELECT * FROM users WHERE telegram_id=?`).get(telegramId);
+  res.json({ ok: true, reward, user: updated });
 });
 
 app.post("/action", requireAuth, (req, res) => {
@@ -262,6 +313,8 @@ app.post("/action", requireAuth, (req, res) => {
   else return res.status(400).json({ error: "unknown action" });
 
   applyXp(user, pet);
+  const earned = coinsForAction(type, pet);
+  user.coins = (user.coins ?? 0) + earned;
 
   pet.updated_at = nowIso();
   pet.last_action_at = nowIso();

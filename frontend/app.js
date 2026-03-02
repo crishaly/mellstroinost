@@ -27,6 +27,9 @@ const foodEmojiEl = document.getElementById("foodEmoji");
 const foodNameEl = document.getElementById("foodName");
 const foodDescEl = document.getElementById("foodDesc");
 const foodMetaEl = document.getElementById("foodMeta");
+const dailyBtn = document.getElementById("dailyBtn");
+const dailyHint = document.getElementById("dailyHint");
+
 
 let token = null;
 let currentRoom = "kitchen";
@@ -74,9 +77,16 @@ function setStatus(text) {
 
 function setBusy(v) {
   isBusy = v;
+
+  // отключаем/включаем все кнопки
   document.querySelectorAll("button").forEach((b) => {
     b.disabled = v;
   });
+
+  // но daily должен оставаться disabled, если уже получен
+  if (dailyBtn && meCache?.dailyClaimedToday) {
+    dailyBtn.disabled = true;
+  }
 }
 
 function renderPetImage(me) {
@@ -161,7 +171,34 @@ async function loadShopFood() {
   const j = await getJson(`${API}/shop/food`, token);
   shopFood = j.items || [];
 }
+async function claimDaily() {
+  if (isBusy) return;
 
+  try {
+    setBusy(true);
+    setStatus("Получаем награду...");
+
+    const r = await postJson(`${API}/daily/claim`, {}, token);
+
+    // обновим состояние пользователя/монет
+    await loadMe();
+
+    setStatus(`🎁 Получено: +${r.reward} монет`);
+    if (dailyHint) dailyHint.textContent = `Получено сегодня: +${r.reward}.`;
+  } catch (e) {
+    const msg = String(e.message || e);
+
+    if (msg.includes("already claimed")) {
+      setStatus("🎁 Ты уже получала награду сегодня.");
+      if (dailyHint) dailyHint.textContent = "Уже получено сегодня. Приходи завтра 🙂";
+      return;
+    }
+
+    setStatus("Ошибка: " + msg);
+  } finally {
+    setBusy(false);
+  }
+}
 // Функция для отправки JSON на сервер
 async function postJson(url, body, token) {
   const r = await fetch(url, {
@@ -199,6 +236,18 @@ async function loadMe() {
 
   meCache = me;
   rebuildInventoryMap(me.inventory);
+
+  // daily UI
+  if (dailyBtn) {
+    const claimed = !!me.dailyClaimedToday;
+    dailyBtn.disabled = claimed || isBusy;
+    dailyBtn.textContent = claimed ? "🎁 Уже получено сегодня" : "Получить ежедневные монеты";
+  }
+  if (dailyHint) {
+    dailyHint.textContent = me.dailyClaimedToday
+      ? "Уже получено сегодня. Приходи завтра 🙂"
+      : "Можно получить 1 раз в сутки.";
+  }
 
   setStatus(`Привет, ${me.user.first_name}!`);
 
@@ -512,6 +561,9 @@ async function main() {
   const auth = await postJson(`${API}/auth/telegram`, { initData }, null);
   token = auth.token;
   await loadShopFood();
+  if (dailyBtn) {
+    dailyBtn.onclick = () => claimDaily();
+  }
   // initial render
   renderRooms();
   renderActions();
