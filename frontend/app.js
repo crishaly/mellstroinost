@@ -325,12 +325,15 @@ if (sceneEl) {
 function setMode(next) {
   mode = next;
 
-  // main UI
-  if (actionsEl) actionsEl.parentElement.style.display = (mode === "main") ? "" : "none";
-  if (roomTabsEl) roomTabsEl.parentElement.style.display = (mode === "main") ? "" : "none";
+  // main UI blocks
+  const actionsCard = document.querySelector(".actionBar");
+  const roomsCard = document.querySelector(".hudRooms");
 
-  // food UI
-  if (foodScreenEl) foodScreenEl.style.display = (mode === "food") ? "" : "none";
+  if (actionsCard) actionsCard.style.display = (mode === "main") ? "" : "none";
+  if (roomsCard) roomsCard.style.display = (mode === "main") ? "" : "none";
+
+  // overlay food UI
+  if (foodScreenEl) foodScreenEl.style.display = (mode === "food") ? "flex" : "none";
 }
 
 function renderFood() {

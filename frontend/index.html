@@ -288,112 +288,349 @@
       15%{ opacity:1; }
       100%{ opacity:0; transform: translate(-50%,-120%) scale(1.15); }
     }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #070b16;
+      color: white;
+      overflow: hidden;
+    }
+
+    .game{
+      height: 100vh;
+      display:flex;
+      flex-direction: column;
+    }
+
+    .hudTop{
+      padding: 10px 12px calc(8px + env(safe-area-inset-top));
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .title{
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    .status{
+      font-size: 12px;
+      color: rgba(255,255,255,.7);
+      margin-top: 4px;
+      line-height: 1.2;
+    }
+
+    .pill{
+      font-size: 12px;
+      color: rgba(255,255,255,.85);
+      background: rgba(255,255,255,.08);
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(10px);
+    }
+
+    .pillBtn{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08);
+      color: white;
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor:pointer;
+      backdrop-filter: blur(10px);
+    }
+
+    .hudRight{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+
+    .sceneWrap{
+      flex: 1;
+      display:flex;
+      padding: 0 12px;
+    }
+
+    .scene{
+      flex: 1;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+      position: relative;
+      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.10), transparent 55%),
+                  linear-gradient(135deg, #1f2937, #0b1226);
+    }
+
+    .petStage{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .petBox{
+      position: relative;
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(0,0,0,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(6px);
+    }
+
+    #petImg{
+      width: min(360px, 88vw);
+      height:auto;
+      display:block;
+      filter: drop-shadow(0 18px 24px rgba(0,0,0,.45));
+    }
+
+    .visualLabel{
+      font-size: 12px;
+      color: rgba(255,255,255,.8);
+    }
+
+    .hudStats{
+      padding: 10px 12px 6px;
+    }
+
+    .player{
+      font-size: 13px;
+      color: rgba(255,255,255,.85);
+      font-weight: 650;
+      margin-bottom: 8px;
+    }
+
+    .statLine{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .bar{
+      flex:1;
+      height: 12px;
+      background: rgba(255,255,255,.08);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .fill{
+      height: 100%;
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    .hudRooms{
+      padding: 0 12px 10px;
+    }
+
+    .tabs{ display:flex; gap: 8px; flex-wrap: wrap; }
+    .tab{
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.75);
+      font-size: 12px;
+      cursor:pointer;
+    }
+    .tab.active{
+      background: rgba(255,255,255,.16);
+      color: #fff;
+    }
+
+    .actionBar{
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      border-top: 1px solid rgba(255,255,255,.10);
+      background: rgba(7,11,22,.75);
+      backdrop-filter: blur(12px);
+    }
+
+    .actionBtns{
+      display:flex;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
+    .actionBtns button{
+      flex: 1;
+      border-radius: 14px;
+      border: 0;
+      padding: 12px 10px;
+      font-weight: 800;
+      background: #e2e8f0;
+      color: #0b1226;
+      cursor:pointer;
+    }
+
+    .actionBtns button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .overlay{
+      position: fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 14px;
+      z-index: 50;
+    }
+
+    .modal{
+      width: min(520px, 92vw);
+      background: rgba(20,28,50,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      padding: 14px;
+      backdrop-filter: blur(14px);
+    }
+
+    .mainBtn{
+      border-radius: 14px;
+      border: 0;
+      padding: 12px 10px;
+      font-weight: 800;
+      background: #e2e8f0;
+      color: #0b1226;
+      cursor:pointer;
+    }
+
+    .hint{
+      font-size: 12px;
+      color: rgba(255,255,255,.65);
+      line-height: 1.25;
+    }
+
+    .debug{
+      position: fixed;
+      left: 12px;
+      bottom: 80px;
+      z-index: 60;
+      max-width: 92vw;
+    }
+    pre{
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.10);
+      padding: 10px;
+      border-radius: 12px;
+      margin: 10px 0 0;
+      font-size: 12px;
+      color: rgba(255,255,255,.88);
+    }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <header>
-      <h1>🐾 Мой Тамагочи</h1>
-      <div id="levelInfo">Уровень: — | XP: — | Монеты: —</div>
-    </header>
+  <div class="game">
 
-    <div id="status">loading...</div>
-
-    <div class="card">
-      <div class="row">
-        <div id="petName">Игрок: —</div>
+    <!-- TOP HUD -->
+    <div class="hudTop">
+      <div class="hudLeft">
+        <div class="title">🐾 Тамагочи</div>
+        <div id="status" class="status">loading...</div>
       </div>
+      <div class="hudRight">
+        <div id="levelInfo" class="pill">Уровень: — | XP: — | Монеты: —</div>
+        <button id="dailyBtn" class="pillBtn" type="button">🎁</button>
+      </div>
+    </div>
 
+    <!-- SCENE -->
+    <div class="sceneWrap">
       <div class="scene scene--kitchen" id="scene">
-        <div class="petBox">
-          <img id="petImg" src="./assets/mid.jpg" alt="pet" />
-          <div id="petFx"></div>
-          <div id="visualLabel">Состояние: —</div>
+        <div class="petStage">
+          <div class="petBox">
+            <img id="petImg" src="./assets/mid.jpg" alt="pet" />
+            <div id="petFx"></div>
+            <div id="visualLabel" class="visualLabel">Состояние: —</div>
+          </div>
         </div>
       </div>
+    </div>
 
-      <div class="stat">
-        🍔 Голод
+    <!-- STATS HUD -->
+    <div class="hudStats">
+      <div class="hudRow">
+        <div id="petName" class="player">Игрок: —</div>
+      </div>
+
+      <div class="statLine">
+        <span>🍔</span>
         <div class="bar"><div id="hungerBar" class="fill"></div></div>
       </div>
 
-      <div class="stat">
-        😊 Настроение
+      <div class="statLine">
+        <span>😊</span>
         <div class="bar"><div id="moodBar" class="fill"></div></div>
       </div>
 
-      <div class="stat">
-        ⚡ Энергия
+      <div class="statLine">
+        <span>⚡</span>
         <div class="bar"><div id="energyBar" class="fill"></div></div>
       </div>
 
-      <div class="stat">
-        🧼 Чистота
+      <div class="statLine">
+        <span>🧼</span>
         <div class="bar"><div id="cleanBar" class="fill"></div></div>
       </div>
-
-      <div class="hint">
-        Подсказка: если слишком часто нажимать кнопки — сервер может вернуть <b>too fast</b> (кулдаун).
-      </div>
     </div>
 
-    <div class="card">
-      <div style="font-weight:650; margin-bottom:10px;">Комнаты</div>
-      <div class="tabs" id="roomTabs">
-        <!-- JS заполнит -->
-      </div>
+    <!-- ROOMS (as chips) -->
+    <div class="hudRooms">
+      <div class="tabs" id="roomTabs"></div>
     </div>
 
-    <div class="card">
-      <div style="font-weight:650; margin-bottom:10px;">Действия</div>
-      <div id="actions"></div>
+    <!-- BOTTOM ACTION BAR -->
+    <div class="actionBar">
+      <div id="actions" class="actionBtns"></div>
     </div>
 
-    <div class="card" id="dailyCard">
-      <div style="font-weight:650; margin-bottom:10px;">🎁 Награда</div>
-      <button id="dailyBtn" type="button" style="width:100%;">Получить ежедневные монеты</button>
-      <div class="hint" id="dailyHint">Можно получить 1 раз в сутки.</div>
-    </div>
-
-    <div class="card" id="foodScreen" style="display:none;">
-      <div class="row" style="margin-bottom:10px;">
-        <div style="font-weight:650;">🍽️ Выбор еды</div>
-        <button id="foodExitBtn" type="button">✖</button>
-      </div>
-
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-        <button id="foodPrevBtn" type="button">←</button>
-
-        <div style="flex:1; text-align:center;">
-          <div id="foodEmoji" style="font-size:64px; line-height:1;">🍎</div>
-          <div id="foodName" style="margin-top:6px; font-weight:650;">Яблоко</div>
-          <div id="foodDesc" style="margin-top:4px; color: rgba(255,255,255,.72); font-size:12px;">
-            +10 голод
-          </div>
-          <div id="foodMeta" style="margin-top:6px; color: rgba(255,255,255,.72); font-size:12px;">
-            Цена: — • В наличии: —
-          </div>
+    <!-- FOOD SCREEN overlay (оставь как у тебя, но поверх) -->
+    <div class="overlay" id="foodScreen" style="display:none;">
+      <div class="modal">
+        <div class="row" style="margin-bottom:10px;">
+          <div style="font-weight:650;">🍽️ Выбор еды</div>
+          <button id="foodExitBtn" type="button" class="pillBtn">✖</button>
         </div>
 
-        <button id="foodNextBtn" type="button">→</button>
-      </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <button id="foodPrevBtn" type="button" class="pillBtn">←</button>
 
-      <div style="display:flex; gap:10px; margin-top:12px;">
-        <button id="foodFeedBtn" type="button" style="flex:1;">🍔 Покормить</button>
-      </div>
+          <div style="flex:1; text-align:center;">
+            <div id="foodEmoji" style="font-size:64px; line-height:1;">🍎</div>
+            <div id="foodName" style="margin-top:6px; font-weight:650;">—</div>
+            <div id="foodDesc" style="margin-top:4px; color: rgba(255,255,255,.72); font-size:12px;">—</div>
+            <div id="foodMeta" style="margin-top:6px; color: rgba(255,255,255,.72); font-size:12px;">Цена: — • В наличии: —</div>
+          </div>
 
-      <div class="hint">
-        Пока это MVP: выбор еды визуальный, действие одно — <b>feed</b>. Потом подключим магазин/инвентарь.
+          <button id="foodNextBtn" type="button" class="pillBtn">→</button>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:12px;">
+          <button id="foodFeedBtn" type="button" class="mainBtn" style="flex:1;">—</button>
+        </div>
+
+        <div class="hint" id="dailyHint" style="margin-top:10px;">Можно получить 1 раз в сутки.</div>
       </div>
     </div>
 
-    <details id="debugWrap">
+    <details id="debugWrap" class="debug">
       <summary>Debug</summary>
       <pre id="debug"></pre>
     </details>
-
-    
 
     <script src="./app.js"></script>
   </div>
