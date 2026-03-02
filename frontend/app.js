@@ -16,7 +16,7 @@ const cleanBar = document.getElementById("cleanBar");
 const levelInfoEl = document.getElementById("levelInfo");
 const actionsEl = document.getElementById("actions");
 const roomTabsEl = document.getElementById("roomTabs");
-
+const sceneEl = document.getElementById("scene");
 const debugEl = document.getElementById("debug");
 const foodScreenEl = document.getElementById("foodScreen");
 const foodPrevBtn = document.getElementById("foodPrevBtn");
@@ -197,7 +197,14 @@ function renderRooms() {
 
     btn.onclick = () => {
       if (isBusy) return;
+
       currentRoom = room.id;
+
+      // 🔥 меняем фон сцены
+      if (sceneEl) {
+        sceneEl.className = "scene scene--" + currentRoom;
+      }
+
       renderRooms();
       renderActions();
     };
@@ -232,6 +239,9 @@ function renderActions() {
   });
 }
 setMode("main");
+if (sceneEl) {
+  sceneEl.className = "scene scene--" + currentRoom;
+}
 
 function setMode(next) {
   mode = next;

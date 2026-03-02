@@ -111,6 +111,36 @@
       background: #22c55e;
       transition: width 0.25s ease;
     }
+    /* -------- SCENE (фон комнаты) -------- */
+
+    .scene{
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 12px;
+      margin-bottom: 12px;
+      text-align: center;
+      transition: background 0.3s ease;
+    }
+
+    /* кухня */
+    .scene--kitchen{
+      background: linear-gradient(135deg, #1f2937, #374151);
+    }
+
+    /* спальня */
+    .scene--bedroom{
+      background: linear-gradient(135deg, #312e81, #4338ca);
+    }
+
+    /* ванная */
+    .scene--bathroom{
+      background: linear-gradient(135deg, #0e7490, #06b6d4);
+    }
+
+    /* игровая */
+    .scene--playroom{
+      background: linear-gradient(135deg, #7c2d12, #ea580c);
+    }
 
     /* tabs (rooms) */
     .tabs{
@@ -197,9 +227,11 @@
         <div id="petName">Игрок: —</div>
       </div>
 
-      <div class="petBox">
-        <img id="petImg" src="./assets/mid.jpg" alt="pet" />
-        <div id="visualLabel">Состояние: —</div>
+      <div class="scene scene--kitchen" id="scene">
+        <div class="petBox">
+          <img id="petImg" src="./assets/mid.jpg" alt="pet" />
+          <div id="visualLabel">Состояние: —</div>
+        </div>
       </div>
 
       <div class="stat">
