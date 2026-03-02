@@ -530,6 +530,120 @@
       font-size: 12px;
       color: rgba(255,255,255,.88);
     }
+        /* --- Scene takes most space --- */
+    .sceneWrap{ flex: 1; display:flex; padding: 0 10px; }
+    .scene{
+      flex:1;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+      position: relative;
+    }
+
+    /* stats over pet */
+    .statsOver{
+      position:absolute;
+      left: 10px;
+      right: 10px;
+      top: 10px;
+      z-index: 5;
+      pointer-events:none;
+    }
+
+    .playerRow{
+      display:flex;
+      justify-content:center;
+      margin-bottom: 8px;
+    }
+
+    .player{
+      font-size: 12px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      backdrop-filter: blur(10px);
+      color: rgba(255,255,255,.9);
+      max-width: 92%;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .statPills{
+      display:flex;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .pillStat{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      padding: 8px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      backdrop-filter: blur(10px);
+    }
+
+    .miniBar{
+      flex:1;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      overflow:hidden;
+    }
+
+    .miniFill{
+      height:100%;
+      width:0%;
+      border-radius: 999px;
+      transition: width .25s ease;
+    }
+
+    /* pet bigger */
+    .petStage{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding-top: 36px; /* чтобы не залезать на статы */
+    }
+    #petImg{
+      width: min(420px, 96vw);
+      height:auto;
+    }
+
+    /* rooms icon bar */
+    .hudRooms{
+      padding: 10px 12px 8px;
+    }
+
+    .tabs{ display:flex; gap: 10px; justify-content: space-between; }
+    .tab{
+      flex: 1;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height: 44px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.85);
+      font-size: 20px; /* крупная иконка */
+    }
+    .tab.active{
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.22);
+    }
+
+    /* actions bar stays below rooms */
+    .actionBar{
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    }
   </style>
 </head>
 
@@ -551,6 +665,22 @@
     <!-- SCENE -->
     <div class="sceneWrap">
       <div class="scene scene--kitchen" id="scene">
+
+        <!-- STATS OVER PET -->
+        <div class="statsOver">
+          <div class="playerRow">
+            <div id="petName" class="player">Игрок: —</div>
+          </div>
+
+          <div class="statPills">
+            <div class="pillStat"><span>🍔</span><div class="miniBar"><div id="hungerBar" class="miniFill"></div></div></div>
+            <div class="pillStat"><span>😊</span><div class="miniBar"><div id="moodBar" class="miniFill"></div></div></div>
+            <div class="pillStat"><span>⚡</span><div class="miniBar"><div id="energyBar" class="miniFill"></div></div></div>
+            <div class="pillStat"><span>🧼</span><div class="miniBar"><div id="cleanBar" class="miniFill"></div></div></div>
+          </div>
+        </div>
+
+        <!-- PET CENTER -->
         <div class="petStage">
           <div class="petBox">
             <img id="petImg" src="./assets/mid.jpg" alt="pet" />
@@ -558,35 +688,10 @@
             <div id="visualLabel" class="visualLabel">Состояние: —</div>
           </div>
         </div>
+
       </div>
     </div>
 
-    <!-- STATS HUD -->
-    <div class="hudStats">
-      <div class="hudRow">
-        <div id="petName" class="player">Игрок: —</div>
-      </div>
-
-      <div class="statLine">
-        <span>🍔</span>
-        <div class="bar"><div id="hungerBar" class="fill"></div></div>
-      </div>
-
-      <div class="statLine">
-        <span>😊</span>
-        <div class="bar"><div id="moodBar" class="fill"></div></div>
-      </div>
-
-      <div class="statLine">
-        <span>⚡</span>
-        <div class="bar"><div id="energyBar" class="fill"></div></div>
-      </div>
-
-      <div class="statLine">
-        <span>🧼</span>
-        <div class="bar"><div id="cleanBar" class="fill"></div></div>
-      </div>
-    </div>
 
     <!-- ROOMS (as chips) -->
     <div class="hudRooms">

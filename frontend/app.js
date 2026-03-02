@@ -40,10 +40,10 @@ let shopFood = [];           // список еды с сервера (цены/
 let invMap = {};             // item_id -> qty
 
 const ROOMS = [
-  { id: "kitchen", label: "🍽️ Кухня" },
-  { id: "bedroom", label: "🛏️ Спальня" },
-  { id: "bathroom", label: "🧼 Ванная" },
-  { id: "playroom", label: "🎮 Игровая" },
+  { id: "kitchen", label: "🍽️" },
+  { id: "bedroom", label: "🛏️" },
+  { id: "bathroom", label: "🧼" },
+  { id: "playroom", label: "🎮" },
 ];
 
 const ACTIONS_BY_ROOM = {
