@@ -264,7 +264,18 @@ function renderActions() {
   list.forEach(([type, label]) => {
     const b = document.createElement("button");
     b.textContent = label;
+
+    const allowed = canDoAction(meCache, type);
+    b.disabled = isBusy || !allowed;
+    if (!allowed) {
+      b.title = "Сейчас это не нужно";
+    }
+
     b.onclick = async () => {
+      if (!canDoAction(meCache, type)) {
+        setStatus("Не нужно 🙂 Шкала уже полная.");
+        return;
+      }
       if (isBusy) return;
       try {
         if (type === "feed") { openFoodMenu(); return; }
@@ -275,6 +286,19 @@ function renderActions() {
     };
     actionsEl.appendChild(b);
   });
+}
+
+function canDoAction(me, type) {
+  const pet = me?.pet || {};
+
+  if (type === "feed") return (pet.hunger ?? 0) < 100;
+  if (type === "clean") return (pet.cleanliness ?? 0) < 100;
+  if (type === "pet") return (pet.mood ?? 0) < 100;
+
+  if (type === "sleep") return pet.state !== "sleeping";
+  if (type === "wake") return pet.state === "sleeping";
+
+  return true;
 }
 
 /* ---------- mode ---------- */
@@ -324,6 +348,10 @@ function renderFood() {
       foodFeedBtn.textContent = price > 0 ? `🛒 Купить (${price})` : "🛒 Взять бесплатно";
       foodFeedBtn.disabled = isBusy || coins < price;
     }
+  }
+  if ((meCache?.pet?.hunger ?? 0) >= 100 && foodFeedBtn) {
+    foodFeedBtn.disabled = true;
+    foodFeedBtn.textContent = "🍔 Уже сыт";
   }
 }
 
@@ -483,7 +511,10 @@ async function main() {
 
     try {
       setBusy(true);
-
+      if ((meCache?.pet?.hunger ?? 0) >= 100) {
+        setStatus("🍔 Питомец уже сыт.");
+        return;
+      }
       if (qty > 0) {
         await postJson(`${API}/food/use`, { itemId: uiItem.id }, token);
         await loadMe();

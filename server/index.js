@@ -305,6 +305,25 @@ app.post("/action", requireAuth, (req, res) => {
 
   pet = applyTimeDecay(pet);
 
+  // ---- hard limits (не даём тратить действие впустую) ----
+  if (type === "feed" && pet.hunger >= 100) {
+    return res.status(400).json({ error: "hunger is full" });
+  }
+  if (type === "clean" && pet.cleanliness >= 100) {
+    return res.status(400).json({ error: "cleanliness is full" });
+  }
+  if (type === "pet" && pet.mood >= 100) {
+    return res.status(400).json({ error: "mood is full" });
+  }
+
+  // сон/бодрствование
+  if (type === "sleep" && pet.state === "sleeping") {
+    return res.status(400).json({ error: "already sleeping" });
+  }
+  if (type === "wake" && pet.state !== "sleeping") {
+    return res.status(400).json({ error: "already awake" });
+  }
+
   if (type === "feed") pet.hunger = Math.min(100, pet.hunger + 20);
   else if (type === "pet") pet.mood = Math.min(100, pet.mood + 15);
   else if (type === "clean") pet.cleanliness = Math.min(100, pet.cleanliness + 25);
