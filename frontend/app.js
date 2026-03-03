@@ -184,16 +184,20 @@ function renderHud(me) {
   const user = me.user || {};
   const pet = me.pet || {};
 
-  // player label (оставляем коротко)
-  if (petNameEl) {
-    const uname = user?.username ? `@${user.username}` : "";
-    petNameEl.textContent = `${user?.first_name || "Игрок"} ${uname}`.trim();
-  }
-
   // level/xp/coins
   const lvl = user?.level ?? 1;
   const xp = user?.xp ?? 0;
   const coins = user?.coins ?? 0;
+  if (coinsNumEl) {
+    if (!Number.isFinite(coinsShown)) coinsShown = coins;
+    if (coinsShown === 0) coinsShown = coins; // первый рендер
+    if (coinsShown !== coins) {
+      animateNumber(coinsNumEl, coinsShown, coins, 500);
+      coinsShown = coins;
+    } else {
+      coinsNumEl.textContent = String(coins);
+    }
+  }
   const threshold = (lvl || 1) * 50;
 
   if (lvlNumEl) lvlNumEl.textContent = String(lvl);
@@ -209,6 +213,20 @@ function renderHud(me) {
   setBar(cleanBar, pet.cleanliness);
 
   if (debugEl) debugEl.textContent = safeJson(me);
+}
+
+let coinsShown = 0;
+
+function animateNumber(el, from, to, ms=450){
+  if (!el) return;
+  const start = performance.now();
+  function tick(t){
+    const k = Math.min(1, (t - start)/ms);
+    const v = Math.round(from + (to-from)*k);
+    el.textContent = String(v);
+    if (k < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 /* ---------- rooms/actions ---------- */
@@ -228,6 +246,10 @@ function renderRooms() {
       if (sceneEl) sceneEl.className = "scene scene--" + currentRoom;
       renderRooms();
       renderActions();
+      if (sceneEl) {
+        sceneEl.classList.add("scene--switch");
+        setTimeout(() => sceneEl.classList.remove("scene--switch"), 220);
+      }
     };
 
     roomTabsEl.appendChild(btn);

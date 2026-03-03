@@ -95,7 +95,11 @@
       border: 1px solid rgba(255,255,255,.10);
       overflow:hidden;
       position: relative;
-      transition: background .25s ease;
+      transition: background .25s ease, transform .25s ease, filter .25s ease;
+    }
+    .scene.scene--switch{
+      transform: scale(0.985);
+      filter: brightness(0.9);
     }
 
     .scene--kitchen{ background: linear-gradient(135deg, #1f2937, #0b1226); }
@@ -218,6 +222,11 @@
       inset:0;
       pointer-events:none;
       overflow:hidden;
+    }
+    #foodEmoji{ animation: foodPulse 1.6s ease-in-out infinite; }
+    @keyframes foodPulse{
+      0%,100%{ transform: scale(1); }
+      50%{ transform: scale(1.06); }
     }
 
     .fxPop{
@@ -405,9 +414,6 @@
       <div class="scene scene--kitchen" id="scene">
 
         <div class="statsOver">
-          <div class="playerRow">
-            <div id="petName" class="player">Игрок: —</div>
-          </div>
           <div class="statPills">
             <div class="pillStat"><span>🍔</span><div class="miniBar"><div id="hungerBar" class="miniFill"></div></div></div>
             <div class="pillStat"><span>😊</span><div class="miniBar"><div id="moodBar" class="miniFill"></div></div></div>
