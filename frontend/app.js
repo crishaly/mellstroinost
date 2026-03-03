@@ -174,10 +174,6 @@ function renderPetImage(me) {
     petImgEl.setAttribute("data-src", nextSrc);
     petImgEl.src = nextSrc;
   }
-
-  if (visualLabelEl) {
-    visualLabelEl.textContent = `Состояние: ${labelMap[vs] || "—"}`;
-  }
 }
 
 function renderHud(me) {

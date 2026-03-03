@@ -86,27 +86,35 @@
     }
     .coinIcon{ font-size: 18px; }
 
-    /* ---------- SCENE ---------- */
-    .sceneWrap{ flex:1; display:flex; padding: 0 10px; }
+      /* --- FULLSCREEN SCENE BACKGROUND --- */
+  .sceneWrap{
+    flex: 1;
+    padding: 0 !important;
+    display: block !important;
+  }
 
-    .scene{
-      flex:1;
-      border-radius: 22px;
-      border: 1px solid rgba(255,255,255,.10);
-      overflow:hidden;
-      position: relative;
-      transition: background .25s ease, transform .25s ease, filter .25s ease;
-    }
-    .scene.scene--switch{
-      transform: scale(0.985);
-      filter: brightness(0.9);
-    }
+  .scene{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden;
+  }
 
-    .scene--kitchen{ background: linear-gradient(135deg, #1f2937, #0b1226); }
-    .scene--bedroom{ background: linear-gradient(135deg, #312e81, #0b1226); }
-    .scene--bathroom{ background: linear-gradient(135deg, #0e7490, #0b1226); }
-    .scene--playroom{ background: linear-gradient(135deg, #7c2d12, #0b1226); }
-
+  /* картинка-фон (пока оставим градиенты, позже заменишь на картинки) */
+  .scene--kitchen{
+    background: url("./assets/bedroom.jpg") center/cover no-repeat;
+  }
+  .scene--bedroom{
+    background: url("./assets/bedroom.jpg") center/cover no-repeat;
+  }
+  .scene--bathroom{
+    background: url("./assets/bedroom.jpg") center/cover no-repeat;
+  }
+  .scene--playroom{
+    background: url("./assets/bedroom.jpg") center/cover no-repeat;
+  }
     /* stats over pet */
     .statsOver{
       position:absolute;
@@ -181,27 +189,19 @@
       padding-top: 38px;
     }
 
+        /* убираем "коробку" вокруг питомца */
     .petBox{
-      position: relative;
-      display:flex;
-      flex-direction: column;
-      align-items:center;
-      gap: 10px;
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(0,0,0,.10);
-      border: 1px solid rgba(255,255,255,.10);
-      backdrop-filter: blur(6px);
-      overflow:hidden;
+      background: transparent !important;
+      border: 0 !important;
+      backdrop-filter: none !important;
+      padding: 0 !important;
     }
 
-    /* питомец БОЛЬШОЙ */
+    /* делаем питомца реально большим */
     #petImg{
-      width: min(520px, 96vw);
-      height: auto;
-      display:block;
-      filter: drop-shadow(0 18px 24px rgba(0,0,0,.45));
-      will-change: transform, opacity;
+      width: min(620px, 96vw) !important;
+      max-height: 70vh;
+      object-fit: contain;
     }
 
     #petImg.idle-breathe{
@@ -426,7 +426,6 @@
           <div class="petBox">
             <img id="petImg" src="./assets/mid.jpg" alt="pet" />
             <div id="petFx"></div>
-            <div id="visualLabel" class="visualLabel">Состояние: —</div>
           </div>
         </div>
 
