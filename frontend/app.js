@@ -58,7 +58,7 @@ const ROOMS = [
 
 const ACTIONS_BY_ROOM = {
   kitchen: [["feed", "🍔"]],
-  bedroom: [["sleep", "😴"], ["wake", "☀️"]],
+  bedroom: [["sleepToggle", "🛏️"]],
   bathroom: [["clean", "🧼"]],
   playroom: [["pet", "🖐️"]],
 };
@@ -260,13 +260,33 @@ function renderActions() {
   const list = ACTIONS_BY_ROOM[currentRoom] || [];
   list.forEach(([type, label]) => {
     const b = document.createElement("button");
+
+    // --- special: sleep toggle ---
+    if (type === "sleepToggle") {
+      const sleeping = meCache?.pet?.state === "sleeping";
+      b.textContent = sleeping ? "☀️ Разбудить" : "😴 Спать";
+      b.disabled = isBusy; // тут allowed не нужен
+
+      b.onclick = async () => {
+        if (isBusy) return;
+        try {
+          const realType = sleeping ? "wake" : "sleep";
+          await doAction(realType);
+        } catch (e) {
+          setStatus("Ошибка: " + e.message);
+        }
+      };
+
+      actionsEl.appendChild(b);
+      return;
+    }
+
+    // --- normal actions ---
     b.textContent = label;
 
     const allowed = canDoAction(meCache, type);
     b.disabled = isBusy || !allowed;
-    if (!allowed) {
-      b.title = "Сейчас это не нужно";
-    }
+    if (!allowed) b.title = "Сейчас это не нужно";
 
     b.onclick = async () => {
       if (!canDoAction(meCache, type)) {
@@ -281,6 +301,7 @@ function renderActions() {
         setStatus("Ошибка: " + e.message);
       }
     };
+
     actionsEl.appendChild(b);
   });
 }
@@ -461,6 +482,7 @@ async function loadMe() {
 
   if (mode === "food") renderFood();
   return me;
+  renderActions();
 }
 
 /* ---------- init ---------- */
