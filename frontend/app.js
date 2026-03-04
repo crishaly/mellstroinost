@@ -36,6 +36,7 @@ const dailyCloseBtn = document.getElementById("dailyCloseBtn");
 const dailyClaimBtn = document.getElementById("dailyClaimBtn");
 const dailyPopupHintEl = document.getElementById("dailyPopupHint");
 
+const eatAnimEl = document.getElementById("eatAnim");
 /* --- state --- */
 let token = null;
 let currentRoom = "kitchen";
@@ -64,9 +65,9 @@ const ACTIONS_BY_ROOM = {
 
 const FOODS = [
   { id: "apple", emoji: "🍎", name: "Яблоко" },
-  { id: "pizza", emoji: "🍕", name: "Пицца" },
-  { id: "fish",  emoji: "🐟", name: "Рыбка" },
-  { id: "cake",  emoji: "🍰", name: "Тортик" },
+  { id: "pizza", emoji: "🍕", name: "Банан" },
+  { id: "fish",  emoji: "🐟", name: "Виноград" },
+  { id: "cake",  emoji: "🍰", name: "Салатик Бурмаладтик" },
 ];
 
 /* ---------- SFX: scroll per food + one eat ---------- */
@@ -124,6 +125,18 @@ function playSound(audio) {
 
 function playSelectSoundForFood(foodId) {
   playSound(SFX.selectByFood[foodId]);
+}
+function playEatAnimation(){
+  if(!eatAnimEl) return;
+
+  eatAnimEl.classList.add("show");
+
+  // перезапуск gif
+  eatAnimEl.src = eatAnimEl.src.split("?")[0] + "?" + Date.now();
+
+  setTimeout(()=>{
+    eatAnimEl.classList.remove("show");
+  },1200);
 }
 
 /* ---------- helpers ---------- */
@@ -615,10 +628,11 @@ async function main() {
 
       if (qty > 0) {
         await postJson(`${API}/food/use`, { itemId: uiItem.id }, token);
-        await loadMe();
 
-        // ✅ один звук кормления для всех блюд
         playSound(SFX.eat);
+        playEatAnimation();
+
+        await loadMe();
 
         fxPop(uiItem.emoji);
         setStatus(`Ок: ${uiItem.name}`);
