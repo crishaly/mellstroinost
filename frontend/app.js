@@ -15,7 +15,6 @@ const cleanBar = document.getElementById("cleanBar");
 const actionsEl = document.getElementById("actions");
 const roomTabsEl = document.getElementById("roomTabs");
 const sceneEl = document.getElementById("scene");
-const debugEl = document.getElementById("debug");
 
 const toastEl = document.getElementById("toast");
 const lvlNumEl = document.getElementById("lvlNum");
@@ -110,9 +109,6 @@ function setBar(el, value) {
   else el.style.background = "#22c55e";
 }
 
-function safeJson(obj) {
-  try { return JSON.stringify(obj, null, 2); } catch { return String(obj); }
-}
 
 function rebuildInventoryMap(inventoryArr) {
   const m = {};
@@ -155,9 +151,9 @@ function renderPetImage(me) {
   const vs = me.visualState || "mid";
 
   const srcMap = {
-    bad: "./assets/bad.jpg",
-    mid: "./assets/mid.jpg",
-    good: "./assets/happy.gif",
+    bad: "./assets/bad.png",
+    mid: "./assets/mid.png",
+    good: "./assets/happy.png",
   };
 
   const labelMap = {
@@ -207,8 +203,6 @@ function renderHud(me) {
   setBar(moodBar, pet.mood);
   setBar(energyBar, pet.energy);
   setBar(cleanBar, pet.cleanliness);
-
-  if (debugEl) debugEl.textContent = safeJson(me);
 }
 
 let coinsShown = 0;
