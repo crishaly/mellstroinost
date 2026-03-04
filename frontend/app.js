@@ -227,6 +227,8 @@ function animateNumber(el, from, to, ms=450){
 
 /* ---------- rooms/actions ---------- */
 function renderRooms() {
+const gameEl = document.querySelector(".game");
+if (gameEl) gameEl.classList.add("bg--" + currentRoom);
   if (!roomTabsEl) return;
   roomTabsEl.innerHTML = "";
 
@@ -240,6 +242,11 @@ function renderRooms() {
       currentRoom = room.id;
 
       if (sceneEl) sceneEl.className = "scene scene--" + currentRoom;
+      const gameEl = document.querySelector(".game");
+      if (gameEl) {
+        gameEl.classList.remove("bg--kitchen","bg--bedroom","bg--bathroom","bg--playroom");
+        gameEl.classList.add("bg--" + currentRoom);
+      }
       renderRooms();
       renderActions();
       if (sceneEl) {

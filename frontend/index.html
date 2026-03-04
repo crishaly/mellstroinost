@@ -425,6 +425,60 @@
       z-index: 10;
       background: transparent;
     }
+    /* 1) ФОН НА ВЕСЬ ЭКРАН (под всем UI) */
+    .game{
+      position: relative;
+      min-height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+
+      /* базовый фон на случай если картинка не загрузится */
+      background: #070b16;
+    }
+
+    /* текущая комната = класс на #scene, но фон рисуем под всем экраном */
+    .game.bg--kitchen { background: url("./assets/bg_kitchen.jpg") center/cover no-repeat; }
+    .game.bg--bedroom { background: url("./assets/bg_bedroom.jpg") center/cover no-repeat; }
+    .game.bg--bathroom{ background: url("./assets/bg_bathroom.jpg") center/cover no-repeat; }
+    .game.bg--playroom{ background: url("./assets/bg_playroom.jpg") center/cover no-repeat; }
+
+    /* 2) СЦЕНУ ДЕЛАЕМ ПРОЗРАЧНОЙ — она теперь просто контейнер для питомца */
+    .sceneWrap{ flex: 1; padding: 0 !important; }
+    .scene{
+      position: relative !important;
+      inset: auto !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: transparent !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+    }
+
+    /* 3) НИЖНИЕ ПАНЕЛИ БЕЗ ПОЛОСОК (убираем фон и бордер) */
+    .hudRooms,
+    .actionBar{
+      background: transparent !important;
+      border: 0 !important;
+      backdrop-filter: none !important;
+    }
+
+    /* если где-то осталась линия */
+    .actionBar{ box-shadow: none !important; }
+
+    /* 4) КНОПКИ/ИКОНКИ КАК В ИГРЕ — стеклянные, без “плашки” */
+    .tab{
+      background: rgba(0,0,0,.18) !important;
+      border: 1px solid rgba(255,255,255,.14) !important;
+    }
+
+    .actionBtns button{
+      background: rgba(255,255,255,.85) !important;
+      color: #0b1226 !important;
+    }
+
+    /* чуть поднять нижние элементы, чтобы фон красиво выглядел */
+    .hudRooms{ padding-bottom: 6px; }
+    .actionBar{ padding-top: 8px; }
       </style>
 </head>
 
