@@ -558,7 +558,8 @@ async function loadMe() {
 
   runIdleFxIfNeeded(me);
 
-  if (mode === "food") renderFood({ playSelect: false });
+  if (mode === "food") renderFood();
+  renderActions();      // ✅ ДО return
   return me;
 }
 
@@ -615,46 +616,63 @@ async function main() {
     closeFoodMenu();
   };
 
-  if (foodFeedBtn) foodFeedBtn.onclick = async () => {
-    if (isBusy) return;
-    markInteraction();
+if (foodFeedBtn) foodFeedBtn.onclick = async () => {
+  unlockAudioOnce();                 // ✅ если у тебя есть разлочка — оставь
+  if (isBusy) return;
 
-    const uiItem = FOODS[foodIndex] || FOODS[0];
-    const serverItem = (shopFood || []).find((x) => x.id === uiItem.id) || null;
-    const price = serverItem ? (serverItem.price ?? 0) : 0;
-    const qty = getQty(uiItem.id);
+  markInteraction();
 
-    try {
-      setBusy(true);
+  const uiItem = FOODS[foodIndex] || FOODS[0];
+  if (!uiItem) return;
 
-      if ((meCache?.pet?.hunger ?? 0) >= 100) {
-        setStatus("🍔 Питомец уже сыт.");
-        return;
-      }
+  const serverItem = (shopFood || []).find((x) => x.id === uiItem.id) || null;
+  const price = serverItem ? (serverItem.price ?? 0) : 0;
+  const qty = getQty(uiItem.id);
 
-      if (qty > 0) {
-        await postJson(`${API}/food/use`, { itemId: uiItem.id }, token);
+  try {
+    setBusy(true);
 
-        playEatAnimation(1100);                 // ✅ прячет питомца, показывает gif
-        playSound(SFX.eatByFood[uiItem.id]);    // ✅ звук конкретной еды
-
-        await loadMe();
-        closeFoodMenu();
-      }
-
-      // покупаем — БЕЗ звука покупки
-      await postJson(`${API}/shop/buy`, { itemId: uiItem.id, qty: 1 }, token);
-      await loadMe();
-      setStatus(price > 0 ? `Куплено: ${uiItem.name}` : `Взято: ${uiItem.name}`);
-      renderFood({ playSelect: false });
-    } catch (e) {
-      const msg = String(e.message || e);
-      if (msg.includes("not enough coins")) setStatus("Не хватает монет 😢");
-      else setStatus("Ошибка: " + msg);
-    } finally {
-      setBusy(false);
+    // нельзя кормить если уже 100
+    if ((meCache?.pet?.hunger ?? 0) >= 100) {
+      setStatus("🍔 Питомец уже сыт.");
+      return;
     }
-  };
+
+    if (qty > 0) {
+      // ✅ ВАЖНО: звук и анимация СРАЗУ В КЛИКЕ, ДО await fetch
+      playSound(SFX.eatByFood[uiItem.id]);
+      playEatAnimation(1100);
+      fxPop(uiItem.emoji);
+
+      // затем уже запрос на сервер
+      await postJson(`${API}/food/use`, { itemId: uiItem.id }, token);
+
+      // обновляем данные и закрываем меню
+      await loadMe();
+      setStatus(`Ок: скушал(а) ${uiItem.name}`);
+      closeFoodMenu();
+      return;
+    }
+
+    // покупка (звук покупки норм — оставляем после запроса или до, не важно)
+    await postJson(`${API}/shop/buy`, { itemId: uiItem.id, qty: 1 }, token);
+    playSound(SFX.buy);
+
+    await loadMe();
+    setStatus(price > 0 ? `Ок: куплено ${uiItem.name}` : `Ок: взято ${uiItem.name}`);
+
+    // остаёмся в меню, чтобы кнопка стала "Использовать"
+    renderFood();
+  } catch (e) {
+    const msg = String(e.message || e);
+
+    // если упало после "скормить" — просто скажем ошибку
+    if (msg.includes("not enough coins")) setStatus("Не хватает монет 😢");
+    else setStatus("Ошибка: " + msg);
+  } finally {
+    setBusy(false);
+  }
+};
 
   // daily popup handlers
   if (dailyCloseBtn) dailyCloseBtn.onclick = () => { if (dailyPopupEl) dailyPopupEl.style.display = "none"; };
