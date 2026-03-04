@@ -73,15 +73,18 @@ const FOODS = [
 /* ---------- SFX: scroll per food + one eat ---------- */
 /* ВАЖНО: покупку НЕ используем. */
 const SFX = {
-  // звук листания — РАЗНЫЙ для каждого блюда
+
+  // звук листания еды
   selectByFood: {
     apple: new Audio("./assets/apple.mp3"),
     pizza: new Audio("./assets/banana.mp3"),
-    fish:  new Audio("./assets/grape.mp3"),
-    cake:  new Audio("./assets/salad.mp3"),
+    fish: new Audio("./assets/grape.mp3"),
+    cake: new Audio("./assets/salad.mp3"),
   },
-  // звук кормления — ОДИН на все блюда (поставь свой файл сюда)
-  eat: new Audio("./assets/eat.mp3"),
+
+  // один звук кормления
+  eat: new Audio("./assets/eat.mp3")
+
 };
 
 const ALL_SOUNDS = [
@@ -640,7 +643,7 @@ if (foodFeedBtn) foodFeedBtn.onclick = async () => {
 
     if (qty > 0) {
       // ✅ ВАЖНО: звук и анимация СРАЗУ В КЛИКЕ, ДО await fetch
-      playSound(SFX.selectByFood[uiItem.id]);
+      playSound(SFX.eat);
       playEatAnimation(1100);
       fxPop(uiItem.emoji);
 
