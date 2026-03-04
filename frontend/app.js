@@ -126,17 +126,23 @@ function playSound(audio) {
 function playSelectSoundForFood(foodId) {
   playSound(SFX.selectByFood[foodId]);
 }
-function playEatAnimation(){
-  if(!eatAnimEl) return;
+function playEatAnimation(ms = 1100){
+  if (!eatAnimEl || !petImgEl) return;
 
+  // скрыть питомца, показать gif
+  petImgEl.classList.add("hide");
   eatAnimEl.classList.add("show");
 
-  // перезапуск gif
-  eatAnimEl.src = eatAnimEl.src.split("?")[0] + "?" + Date.now();
+  // рестарт gif (иначе может не проиграться заново)
+  const base = eatAnimEl.src.split("?")[0];
+  eatAnimEl.src = base + "?v=" + Date.now();
 
-  setTimeout(()=>{
+  // вернуть всё обратно
+  window.clearTimeout(playEatAnimation._t);
+  playEatAnimation._t = window.setTimeout(() => {
     eatAnimEl.classList.remove("show");
-  },1200);
+    petImgEl.classList.remove("hide");
+  }, ms);
 }
 
 /* ---------- helpers ---------- */
@@ -629,15 +635,11 @@ async function main() {
       if (qty > 0) {
         await postJson(`${API}/food/use`, { itemId: uiItem.id }, token);
 
-        playSound(SFX.eat);
-        playEatAnimation();
+        playEatAnimation(1100);                 // ✅ прячет питомца, показывает gif
+        playSound(SFX.eatByFood[uiItem.id]);    // ✅ звук конкретной еды
 
         await loadMe();
-
-        fxPop(uiItem.emoji);
-        setStatus(`Ок: ${uiItem.name}`);
         closeFoodMenu();
-        return;
       }
 
       // покупаем — БЕЗ звука покупки

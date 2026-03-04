@@ -204,19 +204,42 @@
     }
 
         /* убираем "коробку" вокруг питомца */
+    /* контейнер */
     .petBox{
-      background: transparent !important;
-      border: 0 !important;
-      backdrop-filter: none !important;
-      padding: 0 !important;
+      position: relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
 
-    /* делаем питомца реально большим */
-    #petImg{
-      width: min(620px, 96vw) !important;
-      max-height: 70vh;
-      object-fit: contain;
+    /* базовый размер питомца (ты можешь менять 420px) */
+    .petSprite{
+      width: min(420px, 96vw);
+      height: auto;
+      display:block;
+      filter: drop-shadow(0 18px 24px rgba(0,0,0,.45));
     }
+
+    /* питомец */
+    #petImg{
+      opacity: 1;
+      transition: opacity .15s ease;
+    }
+
+    /* gif-анимация "еда" — поверх и того же размера */
+    #eatAnim{
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .12s ease;
+    }
+
+    /* показываем/скрываем */
+    #eatAnim.show{ opacity: 1; }
+    #petImg.hide{ opacity: 0; }
 
     #petImg.idle-breathe{
       animation: breathe 2.2s ease-in-out infinite;
@@ -528,8 +551,8 @@
 
         <div class="petStage">
           <div class="petBox">
-            <img id="petImg" src="./assets/mid.jpg" alt="pet" />
-            <img id="eatAnim" class="eatAnim" src="./assets/eat.gif">
+            <img id="petImg" class="petSprite" src="./assets/mid.png" alt="pet" />
+            <img id="eatAnim" class="petSprite" src="./assets/eat.gif" alt="eat" />
             <div id="petFx"></div>
           </div>
         </div>
