@@ -4,8 +4,6 @@ const API = "https://mellstroinost.onrender.com";
 /* --- DOM --- */
 const petImgEl = document.getElementById("petImg");
 const petFxEl = document.getElementById("petFx");
-const visualLabelEl = document.getElementById("visualLabel");
-const petNameEl = document.getElementById("petName");
 
 const hungerBar = document.getElementById("hungerBar");
 const moodBar = document.getElementById("moodBar");
@@ -49,6 +47,7 @@ let shopFood = [];
 let invMap = {};
 let foodIndex = 0;
 
+/* ---------- config ---------- */
 const ROOMS = [
   { id: "kitchen", label: "🍽️" },
   { id: "bedroom", label: "🛏️" },
@@ -70,6 +69,63 @@ const FOODS = [
   { id: "cake",  emoji: "🍰", name: "Тортик" },
 ];
 
+/* ---------- SFX: scroll per food + one eat ---------- */
+/* ВАЖНО: покупку НЕ используем. */
+const SFX = {
+  // звук листания — РАЗНЫЙ для каждого блюда
+  selectByFood: {
+    apple: new Audio("./assets/apple.mp3"),
+    pizza: new Audio("./assets/banana.mp3"),
+    fish:  new Audio("./assets/grape.mp3"),
+    cake:  new Audio("./assets/salad.mp3"),
+  },
+  // звук кормления — ОДИН на все блюда (поставь свой файл сюда)
+  eat: new Audio("./assets/eat.mp3"),
+};
+
+const ALL_SOUNDS = [
+  ...Object.values(SFX.selectByFood),
+  SFX.eat,
+];
+
+ALL_SOUNDS.forEach(a => {
+  a.preload = "auto";
+  a.volume = 0.65;
+  a.playsInline = true;
+});
+
+let audioUnlocked = false;
+function unlockAudioOnce() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+
+  // iOS/Telegram: нужно "разбудить" аудио пользовательским тапом
+  ALL_SOUNDS.forEach(a => {
+    try {
+      a.muted = true;
+      a.play().then(() => {
+        a.pause();
+        a.currentTime = 0;
+        a.muted = false;
+      }).catch(() => {
+        a.muted = false;
+      });
+    } catch {}
+  });
+}
+
+function playSound(audio) {
+  if (!audio) return;
+  try {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  } catch {}
+}
+
+function playSelectSoundForFood(foodId) {
+  playSound(SFX.selectByFood[foodId]);
+}
+
 /* ---------- helpers ---------- */
 let toastTimer = null;
 function setStatus(text) {
@@ -83,6 +139,7 @@ function setStatus(text) {
 function setBusy(v) {
   isBusy = v;
   document.querySelectorAll("button").forEach((b) => (b.disabled = v));
+  renderActions(); // ✅ сразу обновляем disabled и тексты
 }
 
 function fxPop(emoji) {
@@ -109,7 +166,6 @@ function setBar(el, value) {
   else el.style.background = "#22c55e";
 }
 
-
 function rebuildInventoryMap(inventoryArr) {
   const m = {};
   (inventoryArr || []).forEach((it) => {
@@ -117,6 +173,7 @@ function rebuildInventoryMap(inventoryArr) {
   });
   invMap = m;
 }
+
 function getQty(itemId) {
   return Number(invMap[itemId]) || 0;
 }
@@ -156,12 +213,6 @@ function renderPetImage(me) {
     good: "./assets/happy.png",
   };
 
-  const labelMap = {
-    bad: "😵 Плохое",
-    mid: "😐 Среднее",
-    good: "😄 Хорошее",
-  };
-
   const nextSrc = srcMap[vs] || srcMap.mid;
   petImgEl.classList.add("idle-breathe");
 
@@ -172,6 +223,20 @@ function renderPetImage(me) {
   }
 }
 
+let coinsShown = null;
+
+function animateNumber(el, from, to, ms = 450) {
+  if (!el) return;
+  const start = performance.now();
+  function tick(t) {
+    const k = Math.min(1, (t - start) / ms);
+    const v = Math.round(from + (to - from) * k);
+    el.textContent = String(v);
+    if (k < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 function renderHud(me) {
   const user = me.user || {};
   const pet = me.pet || {};
@@ -180,23 +245,24 @@ function renderHud(me) {
   const lvl = user?.level ?? 1;
   const xp = user?.xp ?? 0;
   const coins = user?.coins ?? 0;
+
+  const threshold = (lvl || 1) * 50;
+  const pct = threshold > 0 ? Math.max(0, Math.min(1, xp / threshold)) : 0;
+
+  if (lvlNumEl) lvlNumEl.textContent = String(lvl);
+  if (xpFillEl) xpFillEl.style.width = Math.round(pct * 100) + "%";
+
   if (coinsNumEl) {
-    if (!Number.isFinite(coinsShown)) coinsShown = coins;
-    if (coinsShown === 0) coinsShown = coins; // первый рендер
-    if (coinsShown !== coins) {
+    if (coinsShown === null) {
+      coinsShown = coins;
+      coinsNumEl.textContent = String(coins);
+    } else if (coinsShown !== coins) {
       animateNumber(coinsNumEl, coinsShown, coins, 500);
       coinsShown = coins;
     } else {
       coinsNumEl.textContent = String(coins);
     }
   }
-  const threshold = (lvl || 1) * 50;
-
-  if (lvlNumEl) lvlNumEl.textContent = String(lvl);
-  if (coinsNumEl) coinsNumEl.textContent = String(coins);
-
-  const pct = threshold > 0 ? Math.max(0, Math.min(1, xp / threshold)) : 0;
-  if (xpFillEl) xpFillEl.style.width = Math.round(pct * 100) + "%";
 
   // stats
   setBar(hungerBar, pet.hunger);
@@ -205,24 +271,8 @@ function renderHud(me) {
   setBar(cleanBar, pet.cleanliness);
 }
 
-let coinsShown = 0;
-
-function animateNumber(el, from, to, ms=450){
-  if (!el) return;
-  const start = performance.now();
-  function tick(t){
-    const k = Math.min(1, (t - start)/ms);
-    const v = Math.round(from + (to-from)*k);
-    el.textContent = String(v);
-    if (k < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
-
 /* ---------- rooms/actions ---------- */
 function renderRooms() {
-const gameEl = document.querySelector(".game");
-if (gameEl) gameEl.classList.add("bg--" + currentRoom);
   if (!roomTabsEl) return;
   roomTabsEl.innerHTML = "";
 
@@ -235,22 +285,33 @@ if (gameEl) gameEl.classList.add("bg--" + currentRoom);
       if (isBusy) return;
       currentRoom = room.id;
 
-      if (sceneEl) sceneEl.className = "scene scene--" + currentRoom;
+      if (sceneEl) {
+        sceneEl.className = "scene scene--" + currentRoom;
+        sceneEl.classList.add("scene--switch");
+        setTimeout(() => sceneEl.classList.remove("scene--switch"), 220);
+      }
+
+      // если используешь bg--room на .game
       const gameEl = document.querySelector(".game");
       if (gameEl) {
         gameEl.classList.remove("bg--kitchen","bg--bedroom","bg--bathroom","bg--playroom");
         gameEl.classList.add("bg--" + currentRoom);
       }
+
       renderRooms();
       renderActions();
-      if (sceneEl) {
-        sceneEl.classList.add("scene--switch");
-        setTimeout(() => sceneEl.classList.remove("scene--switch"), 220);
-      }
     };
 
     roomTabsEl.appendChild(btn);
   });
+}
+
+function canDoAction(me, type) {
+  const pet = me?.pet || {};
+  if (type === "feed") return (pet.hunger ?? 0) < 100;
+  if (type === "clean") return (pet.cleanliness ?? 0) < 100;
+  if (type === "pet") return (pet.mood ?? 0) < 100;
+  return true;
 }
 
 function renderActions() {
@@ -261,11 +322,11 @@ function renderActions() {
   list.forEach(([type, label]) => {
     const b = document.createElement("button");
 
-    // --- special: sleep toggle ---
+    // sleep toggle button
     if (type === "sleepToggle") {
       const sleeping = meCache?.pet?.state === "sleeping";
       b.textContent = sleeping ? "☀️ Разбудить" : "😴 Спать";
-      b.disabled = isBusy; // тут allowed не нужен
+      b.disabled = isBusy;
 
       b.onclick = async () => {
         if (isBusy) return;
@@ -281,12 +342,11 @@ function renderActions() {
       return;
     }
 
-    // --- normal actions ---
+    // normal actions
     b.textContent = label;
 
     const allowed = canDoAction(meCache, type);
     b.disabled = isBusy || !allowed;
-    if (!allowed) b.title = "Сейчас это не нужно";
 
     b.onclick = async () => {
       if (!canDoAction(meCache, type)) {
@@ -294,8 +354,12 @@ function renderActions() {
         return;
       }
       if (isBusy) return;
+
       try {
-        if (type === "feed") { openFoodMenu(); return; }
+        if (type === "feed") {
+          openFoodMenu();
+          return;
+        }
         await doAction(type);
       } catch (e) {
         setStatus("Ошибка: " + e.message);
@@ -306,24 +370,12 @@ function renderActions() {
   });
 }
 
-function canDoAction(me, type) {
-  const pet = me?.pet || {};
-
-  if (type === "feed") return (pet.hunger ?? 0) < 100;
-  if (type === "clean") return (pet.cleanliness ?? 0) < 100;
-  if (type === "pet") return (pet.mood ?? 0) < 100;
-
-  if (type === "sleep") return pet.state !== "sleeping";
-  if (type === "wake") return pet.state === "sleeping";
-
-  return true;
-}
-
 /* ---------- mode ---------- */
 function setMode(next) {
   mode = next;
   const actionsBar = document.querySelector(".actionBar");
   const roomsBar = document.querySelector(".hudRooms");
+
   if (actionsBar) actionsBar.style.display = (mode === "main") ? "" : "none";
   if (roomsBar) roomsBar.style.display = (mode === "main") ? "" : "none";
   if (foodScreenEl) foodScreenEl.style.display = (mode === "food") ? "flex" : "none";
@@ -335,9 +387,11 @@ async function loadShopFood() {
   shopFood = j.items || [];
 }
 
-function renderFood() {
+function renderFood({ playSelect = false } = {}) {
   const uiItem = FOODS[foodIndex] || FOODS[0];
   if (!uiItem) return;
+
+  if (playSelect) playSelectSoundForFood(uiItem.id); // ✅ звук листания по еде
 
   const serverItem = (shopFood || []).find((x) => x.id === uiItem.id) || null;
 
@@ -359,7 +413,10 @@ function renderFood() {
   if (foodMetaEl) foodMetaEl.textContent = `Цена: ${price} • В наличии: ${qty} • Монеты: ${coins}`;
 
   if (foodFeedBtn) {
-    if (qty > 0) {
+    if ((meCache?.pet?.hunger ?? 0) >= 100) {
+      foodFeedBtn.disabled = true;
+      foodFeedBtn.textContent = "🍔 Уже сыт";
+    } else if (qty > 0) {
       foodFeedBtn.textContent = "✅ Использовать";
       foodFeedBtn.disabled = isBusy;
     } else {
@@ -367,18 +424,15 @@ function renderFood() {
       foodFeedBtn.disabled = isBusy || coins < price;
     }
   }
-  if ((meCache?.pet?.hunger ?? 0) >= 100 && foodFeedBtn) {
-    foodFeedBtn.disabled = true;
-    foodFeedBtn.textContent = "🍔 Уже сыт";
-  }
 }
 
 function openFoodMenu() {
   currentRoom = "kitchen";
   if (sceneEl) sceneEl.className = "scene scene--kitchen";
   renderRooms();
+
   setMode("food");
-  renderFood();
+  renderFood({ playSelect: true }); // ✅ при открытии меню тоже звук
 }
 
 function closeFoodMenu() {
@@ -432,15 +486,18 @@ async function doAction(type) {
   setBusy(true);
   try {
     await postJson(`${API}/action`, { type }, token);
-    await loadMe();
+
+    await loadMe();  // обновили meCache
+    renderActions(); // ✅ сразу обновили кнопку сна/доступность
+
     fxPop(type === "pet" ? "💖" : type === "clean" ? "✨" : type === "sleep" ? "💤" : "✅");
-    setStatus(`Ок: ${type}`);
+    setStatus("Ок ✅");
   } finally {
     setBusy(false);
   }
 }
 
-/* ---------- loadMe ---------- */
+/* ---------- idle fx ---------- */
 let lastIdleFxAt = 0;
 let lastUserInteractionAt = Date.now();
 
@@ -468,6 +525,7 @@ function runIdleFxIfNeeded(me) {
   fxPop(idleEmojiByMood(me.moodState));
 }
 
+/* ---------- loadMe ---------- */
 async function loadMe() {
   const me = await getJson(`${API}/me`, token);
   meCache = me;
@@ -477,12 +535,12 @@ async function loadMe() {
 
   renderPetImage(me);
   renderHud(me);
+  renderActions(); // ✅ тут тоже обновим доступность кнопок (полные шкалы)
 
   runIdleFxIfNeeded(me);
 
-  if (mode === "food") renderFood();
+  if (mode === "food") renderFood({ playSelect: false });
   return me;
-  renderActions();
 }
 
 /* ---------- init ---------- */
@@ -494,6 +552,10 @@ async function main() {
 
   tg.ready();
   tg.expand();
+
+  // unlock sounds on first tap
+  document.addEventListener("pointerdown", unlockAudioOnce, { once: true, passive: true });
+  document.addEventListener("pointerdown", () => markInteraction(), { passive: true });
 
   const initData = tg.initData;
   const user = tg.initDataUnsafe?.user;
@@ -511,13 +573,28 @@ async function main() {
   if (sceneEl) sceneEl.className = "scene scene--" + currentRoom;
 
   renderRooms();
-  renderActions();
   setMode("main");
 
   // food buttons
-  if (foodPrevBtn) foodPrevBtn.onclick = () => { if (!isBusy) { markInteraction(); foodIndex = (foodIndex - 1 + FOODS.length) % FOODS.length; renderFood(); } };
-  if (foodNextBtn) foodNextBtn.onclick = () => { if (!isBusy) { markInteraction(); foodIndex = (foodIndex + 1) % FOODS.length; renderFood(); } };
-  if (foodExitBtn) foodExitBtn.onclick = () => { if (!isBusy) { markInteraction(); closeFoodMenu(); } };
+  if (foodPrevBtn) foodPrevBtn.onclick = () => {
+    if (isBusy) return;
+    markInteraction();
+    foodIndex = (foodIndex - 1 + FOODS.length) % FOODS.length;
+    renderFood({ playSelect: true }); // ✅ звук листания
+  };
+
+  if (foodNextBtn) foodNextBtn.onclick = () => {
+    if (isBusy) return;
+    markInteraction();
+    foodIndex = (foodIndex + 1) % FOODS.length;
+    renderFood({ playSelect: true }); // ✅ звук листания
+  };
+
+  if (foodExitBtn) foodExitBtn.onclick = () => {
+    if (isBusy) return;
+    markInteraction();
+    closeFoodMenu();
+  };
 
   if (foodFeedBtn) foodFeedBtn.onclick = async () => {
     if (isBusy) return;
@@ -530,23 +607,30 @@ async function main() {
 
     try {
       setBusy(true);
+
       if ((meCache?.pet?.hunger ?? 0) >= 100) {
         setStatus("🍔 Питомец уже сыт.");
         return;
       }
+
       if (qty > 0) {
         await postJson(`${API}/food/use`, { itemId: uiItem.id }, token);
         await loadMe();
+
+        // ✅ один звук кормления для всех блюд
+        playSound(SFX.eat);
+
         fxPop(uiItem.emoji);
-        setStatus(`Ок: использовано ${uiItem.name}`);
+        setStatus(`Ок: ${uiItem.name}`);
         closeFoodMenu();
         return;
       }
 
+      // покупаем — БЕЗ звука покупки
       await postJson(`${API}/shop/buy`, { itemId: uiItem.id, qty: 1 }, token);
       await loadMe();
-      setStatus(price > 0 ? `Ок: куплено ${uiItem.name}` : `Ок: взято ${uiItem.name}`);
-      renderFood();
+      setStatus(price > 0 ? `Куплено: ${uiItem.name}` : `Взято: ${uiItem.name}`);
+      renderFood({ playSelect: false });
     } catch (e) {
       const msg = String(e.message || e);
       if (msg.includes("not enough coins")) setStatus("Не хватает монет 😢");
@@ -556,7 +640,7 @@ async function main() {
     }
   };
 
-  // daily popup handlers (ВАЖНО: тут, а не внутри еды)
+  // daily popup handlers
   if (dailyCloseBtn) dailyCloseBtn.onclick = () => { if (dailyPopupEl) dailyPopupEl.style.display = "none"; };
   if (dailyClaimBtn) dailyClaimBtn.onclick = () => { markInteraction(); claimDailyFromPopup(); };
 
@@ -566,9 +650,6 @@ async function main() {
   setInterval(async () => {
     try { await loadMe(); } catch {}
   }, 15000);
-
-  // считаем любое нажатие взаимодействием
-  document.addEventListener("pointerdown", () => markInteraction(), { passive: true });
 }
 
 main().catch((e) => setStatus("Ошибка: " + (e?.message || e)));

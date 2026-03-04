@@ -460,6 +460,24 @@
     /* чуть поднять нижние элементы, чтобы фон красиво выглядел */
     .hudRooms{ padding-bottom: 6px; }
     .actionBar{ padding-top: 8px; }
+    /* активная комната — яркая */
+    .tab.active{
+      background: rgba(255,255,255,.22) !important;
+      border-color: rgba(255,255,255,.35) !important;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+      transform: translateY(-1px);
+    }
+
+    /* лёгкая анимация нажатия */
+    .tab{
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    }
+    .tab:active{
+      transform: translateY(0);
+    }
+    .tab.active{
+      box-shadow: 0 0 0 2px rgba(255,255,255,.15), 0 10px 22px rgba(0,0,0,.35);
+    }
       </style>
 </head>
 
