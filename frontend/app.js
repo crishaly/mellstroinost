@@ -640,7 +640,7 @@ if (foodFeedBtn) foodFeedBtn.onclick = async () => {
 
     if (qty > 0) {
       // ✅ ВАЖНО: звук и анимация СРАЗУ В КЛИКЕ, ДО await fetch
-      playSound(SFX.eatByFood[uiItem.id]);
+      playSound(SFX.selectByFood[uiItem.id]);
       playEatAnimation(1100);
       fxPop(uiItem.emoji);
 
