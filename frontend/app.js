@@ -643,6 +643,7 @@ if (foodFeedBtn) foodFeedBtn.onclick = async () => {
 
     if (qty > 0) {
       // ✅ ВАЖНО: звук и анимация СРАЗУ В КЛИКЕ, ДО await fetch
+      closeFoodMenu();
       playSound(SFX.eat);
       playEatAnimation(2000);
       fxPop(uiItem.emoji);
@@ -653,7 +654,6 @@ if (foodFeedBtn) foodFeedBtn.onclick = async () => {
       // обновляем данные и закрываем меню
       await loadMe();
       setStatus(`Ок: скушал(а) ${uiItem.name}`);
-      closeFoodMenu();
       return;
     }
 
