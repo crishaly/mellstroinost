@@ -644,7 +644,7 @@ if (foodFeedBtn) foodFeedBtn.onclick = async () => {
     if (qty > 0) {
       // ✅ ВАЖНО: звук и анимация СРАЗУ В КЛИКЕ, ДО await fetch
       playSound(SFX.eat);
-      playEatAnimation(1100);
+      playEatAnimation(2000);
       fxPop(uiItem.emoji);
 
       // затем уже запрос на сервер
